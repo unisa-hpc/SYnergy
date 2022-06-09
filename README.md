@@ -1,7 +1,7 @@
 # SYnergy
 Header-Only energy wrapper for SYCL.  
 SYnergy allows to get kernel-level energy measuremen with minimal configuration needed.  
-Actually, only Nvidia hardware are supported trought the [NVML library](https://developer.nvidia.com/nvidia-management-library-nvml).
+Actually, only Nvidia hardware are supported through the [NVML library](https://developer.nvidia.com/nvidia-management-library-nvml).
 
 ## Build
 ### Dependencies
