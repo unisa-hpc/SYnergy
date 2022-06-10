@@ -13,7 +13,7 @@
 namespace synergy
 {
 
-	class queue : sycl::queue
+	class queue : public sycl::queue
 	{
 	public:
 		using base = sycl::queue;

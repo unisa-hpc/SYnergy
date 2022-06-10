@@ -46,7 +46,7 @@ namespace synergy
 					i++;
 					std::this_thread::sleep_for(std::chrono::milliseconds(intervals_length));
 				}
-				std::cout << "Energy: " << energy << std::endl; //should be added to a log file
+				std::cout << "Energy: " << energy << " j" << std::endl; //should be added to a log file
 			};
 
 		}

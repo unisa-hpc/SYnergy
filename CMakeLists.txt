@@ -6,10 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(SYCL_BACKEND "Select SYCL backend [hipSYCL | dpcpp]" "")
 
-if(CUDA_SUPPORT)
-	add_compile_definitions(CUDA_SUPPORT)
-endif()
-
+find_package(Threads REQUIRED)
 if(SYCL_BACKEND STREQUAL hipSYCL)
 	find_package(hipSYCL REQUIRED)
 endif()
@@ -22,4 +19,4 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 add_subdirectory(synergy)
-add_subdirectory(samples)
+add_subdirectory(samples EXCLUDE_FROM_ALL)

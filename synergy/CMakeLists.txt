@@ -1,6 +1,11 @@
 add_library(synergy INTERFACE)
 find_package(CUDAToolkit REQUIRED)
 
+
+if(CUDA_SUPPORT)
+	target_compile_definitions(synergy INTERFACE CUDA_SUPPORT)
+endif()
+
 set(header_files 
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/synergy/synergy.hpp",
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/synergy/queue.hpp",
@@ -34,4 +39,5 @@ target_include_directories(synergy
 target_link_libraries(synergy 
 	INTERFACE 
 	CUDA::nvml
+	Threads::Threads
 )
