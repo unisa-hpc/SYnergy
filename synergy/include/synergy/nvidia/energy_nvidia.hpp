@@ -9,7 +9,7 @@
 #include <thread>
 
 #include <synergy/energy_interface.hpp>
-#ifdef CUDA_SUPPORT
+#ifdef SY_CUDA_SUPPORT
 #include <nvml.h>
 #include <synergy/nvidia/utils.hpp>
 #endif

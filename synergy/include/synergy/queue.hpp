@@ -22,7 +22,7 @@ namespace synergy
 		// std::enable_if_t<((!std::is_same_v<sycl::property_list,Args> && !sycl::is_property_v<Args> ) && ...),bool> = true>
 		std::enable_if_t<!::details::is_present_v<sycl::property_list,Args...> && !::details::has_property_v<Args...>,bool> = true>
 		queue(Args&&... args) : base(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{}), energy_wrapper_() {
-			#ifdef CUDA_SUPPORT
+			#ifdef SY_CUDA_SUPPORT
 				energy_wrapper_.create<energy_nvidia>();
 			#else
 				throw std::runtime_error("No energy implementation available");
@@ -44,7 +44,7 @@ namespace synergy
 					throw std::runtime_error("synergy::queue: enable_profiling property is required");
 				}
 			}
-			#ifdef CUDA_SUPPORT
+			#ifdef SY_CUDA_SUPPORT
 				energy_wrapper_.create<energy_nvidia>();
 			#else
 				throw std::runtime_error("No energy implementation available");

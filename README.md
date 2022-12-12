@@ -17,7 +17,7 @@ To build SYnergy, type:
 ```bash
 	cd SYnergy
 	mkdir build && cd build/
-	cmake .. -DSYCL_BACKEND=[hipSYCL | dpcpp] -DCUDA_SUPPORT=[ON | OFF]
+	cmake .. -DSY_SYCL_BACKEND=[hipSYCL | dpcpp] -DSY_CUDA_SUPPORT=[ON | OFF]
 ```
 
 ## Usage
