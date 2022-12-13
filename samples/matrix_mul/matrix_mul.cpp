@@ -27,7 +27,17 @@ void mat_mul(sy::queue& q, size_t n, value_type* a, value_type* b, value_type* c
 	  	c_acc[i][j] = 0.0f;
 	  	for(int k = 0; k < n; k++){
 			  c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
-		}
+			}
+
+	  	c_acc[i][j] = 0.0f;
+	  	for(int k = 0; k < n; k++){
+			  c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
+			}
+
+	  	c_acc[i][j] = 0.0f;
+	  	for(int k = 0; k < n; k++){
+			  c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
+			}
 	  });
   }).wait_and_throw();
 }
@@ -35,10 +45,10 @@ void mat_mul(sy::queue& q, size_t n, value_type* a, value_type* b, value_type* c
 int main()
 {
 	// Create a queue with a default device
-  	sy::queue q(sycl::gpu_selector{}); //Enable queue profiling by default
+  	sy::queue q(sycl::gpu_selector_v, sycl::property::queue::enable_profiling{}); //Enable queue profiling by default
 
 	// Create some buffers
-	int n = 32; 
+	int n = 128; 
 	value_type* a = new value_type[n * n];
 	value_type* b = new value_type[n * n];
 	value_type* c = new value_type[n * n];

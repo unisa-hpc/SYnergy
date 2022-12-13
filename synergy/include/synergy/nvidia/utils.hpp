@@ -2,6 +2,7 @@
 #define _SYNERGY_NVIDIA_UTILS_H_
 
 #include <nvml.h>
+#include <stdexcept>
 
 namespace synergy
 {

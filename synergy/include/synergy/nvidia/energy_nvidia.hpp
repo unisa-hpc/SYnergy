@@ -9,7 +9,7 @@
 #include <thread>
 
 #include <synergy/energy_interface.hpp>
-#ifdef SY_CUDA_SUPPORT
+#ifdef SYNERGY_CUDA_SUPPORT
 #include <nvml.h>
 #include <synergy/nvidia/utils.hpp>
 #endif
@@ -30,9 +30,11 @@ namespace synergy
 				unsigned int power;
 				double energy = 0.0;
 				int i = 0;
-				
+
 				//Wait until start
-				e.get_profiling_info<sycl::info::event_profiling::command_start>();
+				// e.get_profiling_info<sycl::info::event_profiling::command_start>(); // not working on DPC++
+					while (e.get_info<sycl::info::event::command_execution_status>() == sycl::info::event_command_status::submitted)
+						;
 
 				while (e.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete)
 				{
@@ -66,8 +68,6 @@ namespace synergy
 		std::function<void(sycl::event)> energy_func;
 		static constexpr int intervals = 100000;
 		static constexpr int intervals_length = 15; // ms
-};
-
-
-
+	};
+	
 }

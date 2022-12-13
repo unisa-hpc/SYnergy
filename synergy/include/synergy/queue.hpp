@@ -21,8 +21,10 @@ namespace synergy
 		template<typename ...Args,
 		// std::enable_if_t<((!std::is_same_v<sycl::property_list,Args> && !sycl::is_property_v<Args> ) && ...),bool> = true>
 		std::enable_if_t<!::details::is_present_v<sycl::property_list,Args...> && !::details::has_property_v<Args...>,bool> = true>
-		queue(Args&&... args) : base(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{}), energy_wrapper_() {
-			#ifdef SY_CUDA_SUPPORT
+		queue(Args&&... args) 
+			: base(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{}), energy_wrapper_() 
+		{
+			#ifdef SYNERGY_CUDA_SUPPORT
 				energy_wrapper_.create<energy_nvidia>();
 			#else
 				throw std::runtime_error("No energy implementation available");
@@ -31,7 +33,9 @@ namespace synergy
 
 		template<typename ...Args,
 		std::enable_if_t<::details::is_present_v<sycl::property_list,Args...> || ::details::has_property_v<Args...>,bool> = true>
-		queue(Args&&... args) : base(std::forward<Args>(args)...), energy_wrapper_() {
+		queue(Args&&... args) 
+			: base(std::forward<Args>(args)...), energy_wrapper_() 
+		{
 			auto&& args_tuple = std::forward_as_tuple(std::forward<Args>(args)...);
 			if constexpr (::details::is_present_v<sycl::property_list,Args...>) {
 				sycl::property_list&& prop = std::get<::details::Index<sycl::property_list,Args...>::value>(args_tuple);
@@ -44,7 +48,7 @@ namespace synergy
 					throw std::runtime_error("synergy::queue: enable_profiling property is required");
 				}
 			}
-			#ifdef SY_CUDA_SUPPORT
+			#ifdef SYNERGY_CUDA_SUPPORT
 				energy_wrapper_.create<energy_nvidia>();
 			#else
 				throw std::runtime_error("No energy implementation available");
