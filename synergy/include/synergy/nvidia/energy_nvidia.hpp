@@ -32,9 +32,13 @@ namespace synergy
 				int i = 0;
 
 				//Wait until start
-				// e.get_profiling_info<sycl::info::event_profiling::command_start>(); // not working on DPC++
-					while (e.get_info<sycl::info::event::command_execution_status>() == sycl::info::event_command_status::submitted)
-						;
+
+#if defined(__HIPSYCL__)
+				e.get_profiling_info<sycl::info::event_profiling::command_start>(); // not working on DPC++
+#else 
+				while (e.get_info<sycl::info::event::command_execution_status>() == sycl::info::event_command_status::submitted)
+					;
+#endif
 
 				while (e.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete)
 				{
@@ -58,7 +62,8 @@ namespace synergy
 			nvmlShutdown();
 		}
 
-		void process(sycl::event& e){
+		void process(sycl::event& e)
+		{
 			auto&& res = std::async(std::launch::async, energy_func, e);
 		}
 
