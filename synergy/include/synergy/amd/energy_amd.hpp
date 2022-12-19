@@ -10,22 +10,21 @@
 #include <thread>
 
 #include <synergy/energy_interface.hpp>
-#include <nvml.h>
-#include <synergy/nvidia/utils.hpp>
+#include <rocm_smi/rocm_smi.h>
+#include <synergy/amd/utils.hpp>
 
 namespace synergy
 {
 
-	class energy_nvidia : public energy_interface
+	class energy_amd : public energy_interface
 	{
 	public:
 
-		energy_nvidia()
+		energy_amd()
 		{
-			details::check_nvml_error(nvmlInit());
-			details::check_nvml_error(nvmlDeviceGetHandleByIndex(0, &device_handle));
+			details::check_rsmi_error(rsmi_init(0));
 			energy_func = [this](sycl::event e){
-				nvmlReturn_t nvml_result;
+				rsmi_status_t rsmi_result;
 				uint64_t power;
 				double energy = 0.0;
 				int i = 0;
@@ -41,13 +40,13 @@ namespace synergy
 
 				while (e.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete)
 				{
-					nvml_result = nvmlDeviceGetPowerUsage(device_handle, &power);
-					if (nvml_result != NVML_SUCCESS)
+					rsmi_result = rsmi_dev_power_ave_get(device_handle, 0, &power);
+					if (rsmi_result != RSMI_STATUS_SUCCESS)
 					{
-						std::cerr << "NVML power usage failed" << std::endl;
+						std::cerr << "ROCm SMI power usage failed" << std::endl;
 						exit(1);
 					}
-					energy += power * intervals_length / 1000.0; // Get the integral of the power usage over the interval
+					energy += power * intervals_length / 1000000.0; // Get the integral of the power usage over the interval
 					i++;
 					std::this_thread::sleep_for(std::chrono::milliseconds(intervals_length));
 				}
@@ -56,9 +55,9 @@ namespace synergy
 
 		}
 
-		~energy_nvidia()
+		~energy_amd()
 		{
-			nvmlShutdown();
+			rsmi_shut_down();
 		}
 
 		void process(sycl::event& e)
@@ -68,7 +67,7 @@ namespace synergy
 
 
 	private:
-		nvmlDevice_t device_handle;
+		uint32_t device_handle = 0;
 		std::function<void(sycl::event)> energy_func;
 		static constexpr int intervals = 100000;
 		static constexpr int intervals_length = 15; // ms

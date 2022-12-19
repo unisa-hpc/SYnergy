@@ -6,7 +6,7 @@ namespace sy = synergy;
 
 using value_type = double;
 
-void mat_mul(sy::queue& q, size_t n, value_type* a, value_type* b, value_type* c)
+void mat_mul(sy::queue<sy::energy_amd>& q, size_t n, value_type* a, value_type* b, value_type* c)
 {
   sycl::buffer<value_type, 2> a_buf(a, {n,n});
   sycl::buffer<value_type, 2> b_buf(b, {n,n});
@@ -45,7 +45,7 @@ void mat_mul(sy::queue& q, size_t n, value_type* a, value_type* b, value_type* c
 int main()
 {
 	// Create a queue with a default device
-  	sy::queue q(sycl::gpu_selector_v, sycl::property::queue::enable_profiling{}); //Enable queue profiling by default
+  	sy::queue<sy::energy_amd> q(sycl::gpu_selector_v, sycl::property::queue::enable_profiling{}); //Enable queue profiling by default
 
 	// Create some buffers
 	int n = 128; 

@@ -1,4 +1,3 @@
-//Add guard
 #ifndef _SYNERGY_UTILS_H_
 #define _SYNERGY_UTILS_H_
 

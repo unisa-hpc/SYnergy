@@ -13,6 +13,7 @@
 namespace synergy
 {
 
+	template<typename ENERGY_IMPL>
 	class queue : public sycl::queue
 	{
 	public:
@@ -24,11 +25,7 @@ namespace synergy
 		queue(Args&&... args) 
 			: base(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{}), energy_wrapper_() 
 		{
-			#ifdef SYNERGY_CUDA_SUPPORT
-				energy_wrapper_.create<energy_nvidia>();
-			#else
-				throw std::runtime_error("No energy implementation available");
-			#endif
+			energy_wrapper_.create<ENERGY_IMPL>();
 		}
 
 		template<typename ...Args,
@@ -48,11 +45,7 @@ namespace synergy
 					throw std::runtime_error("synergy::queue: enable_profiling property is required");
 				}
 			}
-			#ifdef SYNERGY_CUDA_SUPPORT
-				energy_wrapper_.create<energy_nvidia>();
-			#else
-				throw std::runtime_error("No energy implementation available");
-			#endif
+			energy_wrapper_.create<ENERGY_IMPL>();
 		}
 
 

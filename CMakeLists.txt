@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(SYNERGY_CUDA_SUPPORT "Enable CUDA support" OFF)
+option(SYNERGY_ROCM_SUPPORT "Enable ROCm support" OFF)
 
 set(SYNERGY_SYCL_BACKEND "" CACHE STRING "Select SYCL backend [hipSYCL | dpc++]")
 
