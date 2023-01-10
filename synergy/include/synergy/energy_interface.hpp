@@ -5,9 +5,11 @@
 
 namespace synergy{
 
-struct energy_interface
+class energy_interface
 {
+public:
 	virtual void process(sycl::event& event) = 0;
+	virtual ~energy_interface() = default;
 };
 
 } // namespace synergy

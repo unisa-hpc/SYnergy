@@ -26,7 +26,7 @@ namespace synergy
 			details::check_nvml_error(nvmlDeviceGetHandleByIndex(0, &device_handle));
 			energy_func = [this](sycl::event e){
 				nvmlReturn_t nvml_result;
-				uint64_t power;
+				unsigned int power;
 				double energy = 0.0;
 				int i = 0;
 
