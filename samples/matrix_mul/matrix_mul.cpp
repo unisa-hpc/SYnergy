@@ -1,5 +1,5 @@
 #include <iostream>
-#include <synergy/synergy.hpp>
+#include <synergy.hpp>
 
 namespace sy = synergy;
 

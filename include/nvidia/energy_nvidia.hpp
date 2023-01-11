@@ -9,9 +9,9 @@
 #include <thread>
 #include <utility>
 
+#include "../energy_interface.hpp"
+#include "utils.hpp"
 #include <nvml.h>
-#include <synergy/energy_interface.hpp>
-#include <synergy/nvidia/utils.hpp>
 
 namespace synergy {
 

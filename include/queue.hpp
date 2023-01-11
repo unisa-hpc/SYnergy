@@ -6,8 +6,8 @@
 #include <sycl/sycl.hpp>
 #include <utility>
 
-#include <synergy/energy_implementations.hpp>
-#include <synergy/utils.hpp>
+#include "energy_implementations.hpp"
+#include "utils.hpp"
 
 namespace synergy {
 

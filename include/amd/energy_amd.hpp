@@ -9,9 +9,9 @@
 #include <thread>
 #include <utility>
 
+#include "../energy_interface.hpp"
+#include "utils.hpp"
 #include <rocm_smi/rocm_smi.h>
-#include <synergy/amd/utils.hpp>
-#include <synergy/energy_interface.hpp>
 
 namespace synergy {
 

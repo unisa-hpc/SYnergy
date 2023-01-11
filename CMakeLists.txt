@@ -27,7 +27,6 @@ if(SYNERGY_SYCL_BACKEND STREQUAL "dpc++") # CMAKE_CXX_COMPILER must be set to cl
 	endif()
 endif()
 
-
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING
     "Choose the type of build, options are: Debug Release RelWithDebInfo."	FORCE)	
@@ -40,4 +39,27 @@ if(SYNERGY_BUILD_SAMPLES)
 	add_subdirectory(samples)
 endif()
 
-add_subdirectory(synergy)
+add_library(synergy INTERFACE)
+
+target_include_directories(synergy INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+if(SYNERGY_CUDA_SUPPORT)
+	find_package(CUDAToolkit REQUIRED)
+
+	if(NOT CUDAToolkit_FOUND)
+		message(SEND_ERROR "CUDA Toolkit not found")
+	endif()
+
+	target_compile_definitions(synergy INTERFACE SYNERGY_CUDA_SUPPORT)
+	target_link_libraries(synergy INTERFACE CUDA::nvml)
+endif()
+
+if(SYNERGY_ROCM_SUPPORT)
+	find_package(rocm_smi)
+	if(NOT rocm_smi_FOUND)
+		message(SEND_ERROR "ROCm SMI library not found")
+	endif()
+
+	target_compile_definitions(synergy INTERFACE SYNERGY_ROCM_SUPPORT)
+	target_link_libraries(synergy INTERFACE ${ROCM_SMI_LIBRARIES})
+endif()
