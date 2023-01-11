@@ -2,14 +2,12 @@
 #define _SYNERGY_INTERFACE_H_
 #include <sycl/sycl.hpp>
 
+namespace synergy {
 
-namespace synergy{
-
-class energy_interface
-{
+class energy_interface {
 public:
-	virtual void process(sycl::event& event) = 0;
-	virtual ~energy_interface() = default;
+  virtual void process(sycl::event &event) = 0;
+  virtual ~energy_interface() = default;
 };
 
 } // namespace synergy
