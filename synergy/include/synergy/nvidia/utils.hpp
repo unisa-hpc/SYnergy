@@ -4,20 +4,23 @@
 #include <nvml.h>
 #include <stdexcept>
 
+#define synergyCheckNvmlError(f) synergy::details::_checkNvmlError(f, #f)
+
 namespace synergy
 {
 	namespace details
 	{
-		// Check NVML error
-		inline void check_nvml_error(nvmlReturn_t err)
+		// Should be used through macro function synergyCheckNvmlError
+		inline void _checkNvmlError(nvmlReturn_t returnValue, const std::string& functionCall)
 		{
-			if (err != NVML_SUCCESS)
+			if (returnValue != NVML_SUCCESS)
 			{
-				throw std::runtime_error("NVML error: " + std::to_string(err));
+				throw std::runtime_error("NVML call \"" + functionCall + "\"\n\tfailed with return value: " + std::to_string(returnValue));
 			}
 		}
 
 	}
+	
 }
 
 #endif

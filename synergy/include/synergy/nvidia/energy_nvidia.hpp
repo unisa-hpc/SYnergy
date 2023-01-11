@@ -1,5 +1,5 @@
-#ifndef _SYNERGY_ENERGY_AMD_H_
-#define _SYNERGY_ENERGY_AMD_H_
+#ifndef _SYNERGY_ENERGY_NVIDIA_H_
+#define _SYNERGY_ENERGY_NVIDIA_H_
 
 #include <functional>
 #include <utility>
@@ -22,8 +22,8 @@ namespace synergy
 
 		energy_nvidia()
 		{
-			details::check_nvml_error(nvmlInit());
-			details::check_nvml_error(nvmlDeviceGetHandleByIndex(0, &device_handle));
+			synergyCheckNvmlError(nvmlInit());
+			synergyCheckNvmlError(nvmlDeviceGetHandleByIndex(0, &device_handle));
 			energy_func = [this](sycl::event e){
 				nvmlReturn_t nvml_result;
 				unsigned int power;
@@ -41,14 +41,11 @@ namespace synergy
 
 				while (e.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete)
 				{
-					nvml_result = nvmlDeviceGetPowerUsage(device_handle, &power);
-					if (nvml_result != NVML_SUCCESS)
-					{
-						std::cerr << "NVML power usage failed" << std::endl;
-						exit(1);
-					}
+					synergyCheckNvmlError(nvmlDeviceGetPowerUsage(device_handle, &power));
+
 					energy += power * intervals_length / 1000.0; // Get the integral of the power usage over the interval
 					i++;
+					
 					std::this_thread::sleep_for(std::chrono::milliseconds(intervals_length));
 				}
 				std::cout << "Energy: " << energy << " j" << std::endl; //should be added to a log file
