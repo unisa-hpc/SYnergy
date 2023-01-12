@@ -37,7 +37,7 @@ public:
     }
 
     if (core_frequency != frequency::default_frequency) {
-      std::array<unsigned int, 128> core_clocks;
+      std::array<uint32_t, 128> core_clocks;
       synergy_check_nvml(nvmlDeviceGetSupportedGraphicsClocks(device_handle, current_memory_clock, &count_core_clocks, core_clocks.data()));
 
       current_core_clock = core_frequency == frequency::min_frequency
@@ -51,7 +51,7 @@ public:
     std::printf("default clocks:mem-%dMHz\t core-%dMHz,\tCurrent clocks:mem-%dMHz\t core-%dMHz\n\n", default_memory_clock, default_core_clock, current_memory_clock, current_core_clock);
   }
 
-  void change_frequency(unsigned int memory_frequency, unsigned int core_frequency)
+  void change_frequency(uint32_t memory_frequency, uint32_t core_frequency)
   {
     synergy_check_nvml(nvmlDeviceSetApplicationsClocks(device_handle, memory_frequency, core_frequency));
 
@@ -60,8 +60,8 @@ public:
 
   ~scaling_nvidia()
   {
-    unsigned int curr_mem;
-    unsigned int curr_core;
+    uint32_t curr_mem;
+    uint32_t curr_core;
 
     synergy_check_nvml(nvmlDeviceGetClockInfo(device_handle, NVML_CLOCK_MEM, &curr_mem));
     synergy_check_nvml(nvmlDeviceGetClockInfo(device_handle, NVML_CLOCK_GRAPHICS, &curr_core));
@@ -73,17 +73,17 @@ public:
 private:
   nvmlDevice_t device_handle;
 
-  unsigned int count_memory_clocks;
-  unsigned int count_core_clocks;
+  uint32_t count_memory_clocks;
+  uint32_t count_core_clocks;
 
-  unsigned int default_memory_clock;
-  unsigned int default_core_clock;
+  uint32_t default_memory_clock;
+  uint32_t default_core_clock;
 
-  unsigned int min_memory_clock;
-  unsigned int max_memory_clock;
+  uint32_t min_memory_clock;
+  uint32_t max_memory_clock;
 
-  unsigned int current_memory_clock;
-  unsigned int current_core_clock;
+  uint32_t current_memory_clock;
+  uint32_t current_core_clock;
 
   void initialize_device_info()
   {
@@ -93,7 +93,7 @@ private:
     synergy_check_nvml(nvmlDeviceGetDefaultApplicationsClock(device_handle, NVML_CLOCK_MEM, &default_memory_clock));
     synergy_check_nvml(nvmlDeviceGetDefaultApplicationsClock(device_handle, NVML_CLOCK_GRAPHICS, &default_core_clock));
 
-    std::array<unsigned int, 128> memory_clocks;
+    std::array<uint32_t, 128> memory_clocks;
     synergy_check_nvml(nvmlDeviceGetSupportedMemoryClocks(device_handle, &count_memory_clocks, memory_clocks.data()));
     max_memory_clock = memory_clocks[0];
     min_memory_clock = memory_clocks[count_memory_clocks - 1];

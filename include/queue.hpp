@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "energy_implementations.hpp"
+#include "scaling_interface.hpp"
 #include "utils.hpp"
 
 namespace synergy {
@@ -19,25 +20,7 @@ public:
   queue(Args &&...args)
       : base(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{})
   {
-    auto vendor = get_device().get_info<sycl::info::device::vendor>();
-    if (vendor.find("nvidia")) {
-#ifdef SYNERGY_CUDA_SUPPORT
-      m_energy = std::make_unique<energy_nvidia>();
-      m_scaling = std::make_unique<scaling_nvidia>();
-#else
-      throw std::runtime_error("synergy::queue: vendor \"" + vendor + "\" not supported");
-#endif
-    } else if (vendor.find("amd")) {
-#ifdef SYNERGY_ROCM_SUPPORT
-      m_energy = std::make_unique<energy_amd>();
-#else
-      throw std::runtime_error("synergy::queue: vendor \"" + vendor + "\" not supported");
-#endif
-    } else {
-      throw std::runtime_error("synergy::queue: vendor \"" + vendor + "\" not supported");
-    }
-
-    m_scaling->change_frequency(frequency::default_frequency, frequency::default_frequency);
+    initialize_queue();
   }
 
   template <typename... Args, std::enable_if_t<::details::is_present_v<sycl::property_list, Args...> || ::details::has_property_v<Args...>, bool> = true>
@@ -55,6 +38,31 @@ public:
         throw std::runtime_error("synergy::queue: enable_profiling property is required");
       }
     }
+
+    initialize_queue();
+  }
+
+  template <typename... Args>
+  sycl::event submit(Args &&...args)
+  {
+    auto &&event = sycl::queue::submit(std::forward<Args>(args)...);
+    m_energy->process(event);
+    return event;
+  }
+
+  double get_queue_consumption()
+  {
+    m_energy->consumption();
+  }
+
+private:
+  std::unique_ptr<energy_interface> m_energy;
+  std::unique_ptr<scaling_interface> m_scaling;
+
+  inline void initialize_queue()
+  {
+    if (get_device().is_gpu())
+      throw std::runtime_error("synergy::queue: only GPUs are supported");
 
     std::string vendor = get_device().get_info<sycl::info::device::vendor>();
     if (vendor.find("nvidia")) {
@@ -74,20 +82,8 @@ public:
       throw std::runtime_error("synergy::queue: vendor \"" + vendor + "\" not supported");
     }
 
-    m_scaling->change_frequency(frequency::default_frequency, frequency::default_frequency);
+    m_scaling->change_frequency(frequency::default_frequency, frequency::max_frequency);
   }
-
-  template <typename... Args>
-  sycl::event submit(Args &&...args)
-  {
-    auto &&event = sycl::queue::submit(std::forward<Args>(args)...);
-    m_energy->process(event);
-    return event;
-  }
-
-private:
-  std::unique_ptr<energy_interface> m_energy;
-  std::unique_ptr<scaling_interface> m_scaling;
 };
 
 } // namespace synergy

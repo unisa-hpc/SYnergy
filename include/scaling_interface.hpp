@@ -12,7 +12,7 @@ enum class frequency {
 class scaling_interface {
 public:
   virtual void change_frequency(frequency memory_frequency, frequency core_frequency) = 0;
-  virtual void change_frequency(unsigned int memory_frequency, unsigned int core_frequency) = 0;
+  virtual void change_frequency(uint32_t memory_frequency, uint32_t core_frequency) = 0;
   virtual ~scaling_interface() = default;
 };
 

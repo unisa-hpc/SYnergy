@@ -7,6 +7,7 @@ namespace synergy {
 class energy_interface {
 public:
   virtual void process(sycl::event &event) = 0;
+  virtual double consumption() = 0;
   virtual ~energy_interface() = default;
 };
 

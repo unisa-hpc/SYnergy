@@ -10,10 +10,10 @@ namespace synergy {
 namespace details {
 
 // Should be used through macro function synergy_check_nvml
-inline void _check_nvml(nvmlReturn_t returnValue, const std::string &functionCall)
+inline void _check_nvml(nvmlReturn_t return_value, const std::string &function_call)
 {
-  if (returnValue != NVML_SUCCESS) {
-    throw std::runtime_error("NVML call \"" + functionCall + "\"\n\tfailed with return value: " + std::to_string(returnValue));
+  if (return_value != NVML_SUCCESS) {
+    throw std::runtime_error("NVML call \"" + function_call + "\"\n\tfailed with return value: " + std::to_string(return_value));
   }
 }
 

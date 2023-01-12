@@ -17,7 +17,7 @@ struct Index<T, T, Args...> : std::integral_constant<std::size_t, 0> {};
 template <typename T, typename U, typename... Args>
 struct Index<T, U, Args...> : std::integral_constant<std::size_t, 1 + Index<T, Args...>::value> {};
 
-// --------------- Check id a type is present in varidic template ----------------
+// --------------- Check if a type is present in varidic template ----------------
 
 template <typename T, typename... Args>
 struct is_present;
