@@ -18,27 +18,23 @@ if(SYNERGY_SYCL_BACKEND STREQUAL "dpc++") # CMAKE_CXX_COMPILER must be set to cl
 
 	if(SYNERGY_CUDA_SUPPORT)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=nvptx64-nvidia-cuda")
+
 		set(SYNERGY_CUDA_ARCH "" CACHE STRING "CUDA architecture in format \"sm_xy\"")
 
 		if(NOT SYNERGY_CUDA_ARCH STREQUAL "")
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend --cuda-gpu-arch=${SYNERGY_CUDA_ARCH}")
 		endif()
-
 	endif()
 endif()
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-set(CMAKE_BUILD_TYPE "Release" CACHE STRING
-    "Choose the type of build, options are: Debug Release RelWithDebInfo."	FORCE)	
+	set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+		"Choose the type of build, options are: Debug Release RelWithDebInfo." FORCE)
 	message(STATUS "Setting build type to '${CMAKE_BUILD_TYPE}' as none was specified")
 	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo")
 endif()
 
-option(SYNERGY_BUILD_SAMPLES "Build samples" OFF)
-if(SYNERGY_BUILD_SAMPLES)
-	add_subdirectory(samples)
-endif()
-
+# ###################### SYnergy ######################
 add_library(synergy INTERFACE)
 
 target_include_directories(synergy INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -56,10 +52,18 @@ endif()
 
 if(SYNERGY_ROCM_SUPPORT)
 	find_package(rocm_smi)
+
 	if(NOT rocm_smi_FOUND)
 		message(SEND_ERROR "ROCm SMI library not found")
 	endif()
 
 	target_compile_definitions(synergy INTERFACE SYNERGY_ROCM_SUPPORT)
 	target_link_libraries(synergy INTERFACE ${ROCM_SMI_LIBRARIES})
+endif()
+
+# ##################### Samples ######################
+option(SYNERGY_BUILD_SAMPLES "Build samples" OFF)
+
+if(SYNERGY_BUILD_SAMPLES)
+	add_subdirectory(samples)
 endif()

@@ -48,6 +48,7 @@ int main()
 {
   // Create a queue with a default device
   sy::queue q(sycl::gpu_selector_v, sycl::property::queue::enable_profiling{}); // Enable queue profiling by default
+  std::cout << "Memory frequencies: " << q.get_info<synergy::info::queue::memory_frequencies>();
 
   // Create some buffers
   int n = 4096;
@@ -71,6 +72,8 @@ int main()
       return 1;
     }
   }
+
+  std::cout << "Energy consumption: " << q.get_queue_consumption() << " j\n";
 
   // Cleanup
   delete[] a;

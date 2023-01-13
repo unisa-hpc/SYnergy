@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "energy_implementations.hpp"
+#include "info.hpp"
 #include "scaling_interface.hpp"
 #include "utils.hpp"
 
@@ -50,9 +51,13 @@ public:
     return event;
   }
 
+  template <info::queue param>
+  typename info::param_traits<info::queue, param>::return_type
+  get_info() const;
+
   double get_queue_consumption()
   {
-    m_energy->consumption();
+    return m_energy->consumption();
   }
 
 private:
@@ -61,7 +66,7 @@ private:
 
   inline void initialize_queue()
   {
-    if (get_device().is_gpu())
+    if (!get_device().is_gpu())
       throw std::runtime_error("synergy::queue: only GPUs are supported");
 
     std::string vendor = get_device().get_info<sycl::info::device::vendor>();
@@ -85,6 +90,18 @@ private:
     m_scaling->change_frequency(frequency::default_frequency, frequency::max_frequency);
   }
 };
+
+template <>
+struct info::param_traits<info::queue, info::queue::memory_frequencies> {
+  using return_type = unsigned int;
+};
+
+template <>
+inline typename info::param_traits<info::queue, info::queue::memory_frequencies>::return_type
+queue::get_info<synergy::info::queue::memory_frequencies>() const
+{
+  return 1000;
+}
 
 } // namespace synergy
 
