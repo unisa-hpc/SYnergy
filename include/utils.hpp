@@ -1,8 +1,5 @@
-#ifndef _SYNERGY_UTILS_H_
-#define _SYNERGY_UTILS_H_
-
-#include <cstddef>
-#include <type_traits>
+#ifndef SYNERGY_UTILS_H
+#define SYNERGY_UTILS_H
 
 namespace details {
 
@@ -58,4 +55,4 @@ template <class... Args>
 inline constexpr bool has_property_v = has_property<Args...>();
 
 } // namespace details
-#endif // _SYNERGY_UTILS_H_
+#endif // SYNERGY_UTILS_H

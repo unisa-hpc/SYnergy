@@ -1,5 +1,5 @@
-#ifndef _SYNERGY_AMD_UTILS_H_
-#define _SYNERGY_AMD_UTILS_H_
+#ifndef SYNERGY_AMD_UTILS_H
+#define SYNERGY_AMD_UTILS_H
 
 #include <rocm_smi/rocm_smi.h>
 #include <stdexcept>

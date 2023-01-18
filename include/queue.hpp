@@ -1,15 +1,13 @@
-#ifndef _SYNERGY_QUEUE_H_
-#define _SYNERGY_QUEUE_H_
+#ifndef SYNERGY_QUEUE_H
+#define SYNERGY_QUEUE_H
 
-#include <chrono>
-#include <functional>
 #include <sycl/sycl.hpp>
-#include <utility>
 
-#include "energy_implementations.hpp"
-#include "info.hpp"
+#include "profiling_interface.hpp"
 #include "scaling_interface.hpp"
+#include "types.h"
 #include "utils.hpp"
+#include "vendor_implementations.hpp"
 
 namespace synergy {
 
@@ -44,65 +42,35 @@ public:
   }
 
   template <typename... Args>
-  sycl::event submit(Args &&...args)
+  inline sycl::event submit(Args &&...args)
   {
     auto &&event = sycl::queue::submit(std::forward<Args>(args)...);
-    m_energy->process(event);
+    m_energy->profile(event);
     return event;
   }
 
-  template <info::queue param>
-  typename info::param_traits<info::queue, param>::return_type
-  get_info() const;
-
-  double get_queue_consumption()
+  inline double energy_consumption()
   {
     return m_energy->consumption();
   }
 
+  inline std::vector<frequency> memory_frequencies()
+  {
+    return m_scaling->memory_frequencies();
+  }
+
+  inline std::vector<frequency> core_frequencies(frequency memory_frequency)
+  {
+    return m_scaling->core_frequencies(memory_frequency);
+  }
+
 private:
-  std::unique_ptr<energy_interface> m_energy;
+  std::unique_ptr<profiling_interface> m_energy;
   std::unique_ptr<scaling_interface> m_scaling;
 
-  inline void initialize_queue()
-  {
-    if (!get_device().is_gpu())
-      throw std::runtime_error("synergy::queue: only GPUs are supported");
-
-    std::string vendor = get_device().get_info<sycl::info::device::vendor>();
-    if (vendor.find("nvidia")) {
-#ifdef SYNERGY_CUDA_SUPPORT
-      m_energy = std::make_unique<energy_nvidia>();
-      m_scaling = std::make_unique<scaling_nvidia>();
-#else
-      throw std::runtime_error("synergy::queue: vendor \"" + vendor + "\" not supported");
-#endif
-    } else if (vendor.find("amd")) {
-#ifdef SYNERGY_ROCM_SUPPORT
-      m_energy = std::make_unique<energy_amd>();
-#else
-      throw std::runtime_error("synergy::queue: vendor \"" + vendor + "\" not supported");
-#endif
-    } else {
-      throw std::runtime_error("synergy::queue: vendor \"" + vendor + "\" not supported");
-    }
-
-    m_scaling->change_frequency(frequency::default_frequency, frequency::max_frequency);
-  }
+  void initialize_queue();
 };
-
-template <>
-struct info::param_traits<info::queue, info::queue::memory_frequencies> {
-  using return_type = unsigned int;
-};
-
-template <>
-inline typename info::param_traits<info::queue, info::queue::memory_frequencies>::return_type
-queue::get_info<synergy::info::queue::memory_frequencies>() const
-{
-  return 1000;
-}
 
 } // namespace synergy
 
-#endif // _SYNERGY_QUEUE_H_
+#endif // SYNERGY_QUEUE_H

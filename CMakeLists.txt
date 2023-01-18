@@ -35,9 +35,13 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 # ###################### SYnergy ######################
-add_library(synergy INTERFACE)
+add_library(synergy STATIC)
 
-target_include_directories(synergy INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(synergy INTERFACE include)
+target_sources(synergy
+	PRIVATE
+	src/queue.cpp
+)
 
 if(SYNERGY_CUDA_SUPPORT)
 	find_package(CUDAToolkit REQUIRED)
@@ -48,6 +52,11 @@ if(SYNERGY_CUDA_SUPPORT)
 
 	target_compile_definitions(synergy INTERFACE SYNERGY_CUDA_SUPPORT)
 	target_link_libraries(synergy INTERFACE CUDA::nvml)
+	target_sources(synergy
+		PRIVATE
+		src/nvidia/profiling_nvidia.cpp
+		src/nvidia/scaling_nvidia.cpp
+	)
 endif()
 
 if(SYNERGY_ROCM_SUPPORT)
@@ -59,6 +68,11 @@ if(SYNERGY_ROCM_SUPPORT)
 
 	target_compile_definitions(synergy INTERFACE SYNERGY_ROCM_SUPPORT)
 	target_link_libraries(synergy INTERFACE ${ROCM_SMI_LIBRARIES})
+	target_sources(synergy
+		PRIVATE
+		src/queue.cpp
+		src/amd/profiling_amd.cpp
+	)
 endif()
 
 # ##################### Samples ######################

@@ -14,9 +14,9 @@ public:
     initialize_device_info();
   }
 
-  void change_frequency(frequency memory_frequency, frequency core_frequency)
+  void change_frequency(frequency_preset memory_frequency, frequency_preset core_frequency)
   {
-    // if (memory_frequency == frequency::default_frequency && core_frequency == frequency::default_frequency) {
+    // if (memory_frequency == frequency_preset::default_frequency && core_frequency == frequency_preset::default_frequency) {
     //   current_memory_clock = default_memory_clock;
     //   current_core_clock = default_core_clock;
 
@@ -26,21 +26,21 @@ public:
     // }
 
     // switch (memory_frequency) {
-    // case frequency::min_frequency:
+    // case frequency_preset::min_frequency:
     //   current_memory_clock = min_memory_clock;
     //   break;
-    // case frequency::max_frequency:
+    // case frequency_preset::max_frequency:
     //   current_memory_clock = max_memory_clock;
     //   break;
     // default:
     //   current_memory_clock = default_memory_clock;
     // }
 
-    // if (core_frequency != frequency::default_frequency) {
+    // if (core_frequency != frequency_preset::default_frequency) {
     //   std::array<uint32_t, 128> core_clocks;
     //   synergy_check_rsmi(nvmlDeviceGetSupportedGraphicsClocks(device_handle, current_memory_clock, &count_core_clocks, core_clocks.data()));
 
-    //   current_core_clock = core_frequency == frequency::min_frequency
+    //   current_core_clock = core_frequency == frequency_preset::min_frequency
     //                         ? core_clocks[count_core_clocks - 1]
     //                         : core_clocks[0];
     // } else
