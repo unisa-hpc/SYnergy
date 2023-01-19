@@ -17,7 +17,6 @@ public:
 private:
   uint32_t device_handle = 0;
   std::function<void(sycl::event)> energy_function;
-  static constexpr int intervals = 100000;
   static constexpr int intervals_length = 15; // ms
 
   double energy_consumption = 0.0;

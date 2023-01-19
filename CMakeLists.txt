@@ -37,7 +37,11 @@ endif()
 # ###################### SYnergy ######################
 add_library(synergy STATIC)
 
-target_include_directories(synergy INTERFACE include)
+if(SYNERGY_SYCL_BACKEND STREQUAL hipSYCL)
+	add_sycl_to_target(TARGET synergy)
+endif()
+
+target_include_directories(synergy PUBLIC include)
 target_sources(synergy
 	PRIVATE
 	src/queue.cpp
@@ -50,8 +54,8 @@ if(SYNERGY_CUDA_SUPPORT)
 		message(SEND_ERROR "CUDA Toolkit not found")
 	endif()
 
-	target_compile_definitions(synergy INTERFACE SYNERGY_CUDA_SUPPORT)
-	target_link_libraries(synergy INTERFACE CUDA::nvml)
+	target_compile_definitions(synergy PRIVATE "SYNERGY_CUDA_SUPPORT")
+	target_link_libraries(synergy PRIVATE CUDA::nvml)
 	target_sources(synergy
 		PRIVATE
 		src/nvidia/profiling_nvidia.cpp
@@ -66,11 +70,10 @@ if(SYNERGY_ROCM_SUPPORT)
 		message(SEND_ERROR "ROCm SMI library not found")
 	endif()
 
-	target_compile_definitions(synergy INTERFACE SYNERGY_ROCM_SUPPORT)
-	target_link_libraries(synergy INTERFACE ${ROCM_SMI_LIBRARIES})
+	target_compile_definitions(synergy PRIVATE SYNERGY_ROCM_SUPPORT)
+	target_link_libraries(synergy PRIVATE ${ROCM_SMI_LIBRARIES})
 	target_sources(synergy
 		PRIVATE
-		src/queue.cpp
 		src/amd/profiling_amd.cpp
 	)
 endif()

@@ -15,6 +15,9 @@ public:
   virtual void change_frequency(frequency memory_frequency, frequency core_frequency) = 0;
 
   virtual ~scaling_interface() = default;
+
+protected:
+  static constexpr int max_clocks = 512;
 };
 
 } // namespace synergy

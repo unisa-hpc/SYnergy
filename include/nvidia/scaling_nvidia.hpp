@@ -10,15 +10,17 @@ namespace synergy {
 class scaling_nvidia : public scaling_interface {
 public:
   scaling_nvidia();
+
+  std::vector<frequency> memory_frequencies();
+  std::vector<frequency> core_frequencies(frequency memory_frequency);
+
   void change_frequency(frequency_preset memory_frequency, frequency_preset core_frequency);
-  void change_frequency(uint32_t memory_frequency, uint32_t core_frequency);
+  void change_frequency(frequency memory_frequency, frequency core_frequency);
+
   ~scaling_nvidia();
 
 private:
   nvmlDevice_t device_handle;
-
-  uint32_t count_memory_clocks;
-  uint32_t count_core_clocks;
 
   uint32_t default_memory_clock;
   uint32_t default_core_clock;
