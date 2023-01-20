@@ -20,6 +20,7 @@ void queue::initialize_queue()
   } else if (vendor.find("amd") != std::string::npos) {
 #ifdef SYNERGY_ROCM_SUPPORT
     m_energy = std::make_unique<profiling_amd>();
+    m_scaling = std::make_unique<scaling_amd>();
 #else
     throw std::runtime_error("synergy::queue: vendor \"" + vendor + "\" not supported");
 #endif
@@ -27,7 +28,7 @@ void queue::initialize_queue()
     throw std::runtime_error("synergy::queue: vendor \"" + vendor + "\" not supported");
   }
 
-  m_scaling->change_frequency(frequency_preset::default_frequency, frequency_preset::max_frequency);
+  m_scaling->set_device_frequency(frequency_preset::default_frequency, frequency_preset::max_frequency);
 }
 
 } // namespace synergy

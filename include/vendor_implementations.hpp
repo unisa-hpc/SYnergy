@@ -5,4 +5,5 @@
 
 #ifdef SYNERGY_ROCM_SUPPORT
 #include "amd/profiling_amd.hpp"
+#include "amd/scaling_amd.hpp"
 #endif

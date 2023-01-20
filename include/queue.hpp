@@ -54,14 +54,14 @@ public:
     return m_energy->consumption();
   }
 
-  inline std::vector<frequency> memory_frequencies()
+  inline std::vector<frequency> query_supported_frequencies()
   {
-    return m_scaling->memory_frequencies();
+    return m_scaling->query_supported_frequencies();
   }
 
-  inline std::vector<frequency> core_frequencies(frequency memory_frequency)
+  inline std::vector<frequency> query_supported_core_frequencies(frequency memory_frequency)
   {
-    return m_scaling->core_frequencies(memory_frequency);
+    return m_scaling->query_supported_core_frequencies(memory_frequency);
   }
 
 private:

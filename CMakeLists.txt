@@ -75,6 +75,7 @@ if(SYNERGY_ROCM_SUPPORT)
 	target_sources(synergy
 		PRIVATE
 		src/amd/profiling_amd.cpp
+		src/amd/scaling_amd.cpp
 	)
 endif()
 

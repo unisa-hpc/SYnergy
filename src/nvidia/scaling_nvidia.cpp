@@ -24,7 +24,7 @@ scaling_nvidia::scaling_nvidia()
   min_memory_clock = memory_clocks[count_memory_clocks - 1];
 }
 
-std::vector<frequency> scaling_nvidia::memory_frequencies()
+std::vector<frequency> scaling_nvidia::query_supported_frequencies()
 {
   std::array<uint32_t, max_clocks> memory_clocks;
   uint32_t count_memory_clocks;
@@ -37,7 +37,7 @@ std::vector<frequency> scaling_nvidia::memory_frequencies()
   return freq;
 }
 
-std::vector<frequency> scaling_nvidia::core_frequencies(frequency memory_frequency)
+std::vector<frequency> scaling_nvidia::query_supported_core_frequencies(frequency memory_frequency)
 {
   uint32_t mem_freq = static_cast<uint32_t>(memory_frequency);
   std::array<uint32_t, max_clocks> core_clocks;
@@ -52,7 +52,7 @@ std::vector<frequency> scaling_nvidia::core_frequencies(frequency memory_frequen
   return freq;
 }
 
-void scaling_nvidia::change_frequency(frequency_preset memory_frequency, frequency_preset core_frequency)
+void scaling_nvidia::set_device_frequency(frequency_preset memory_frequency, frequency_preset core_frequency)
 {
   if (memory_frequency == frequency_preset::default_frequency && core_frequency == frequency_preset::default_frequency) {
     current_memory_clock = default_memory_clock;
@@ -87,15 +87,11 @@ void scaling_nvidia::change_frequency(frequency_preset memory_frequency, frequen
     current_core_clock = default_core_clock;
 
   synergy_check_nvml(nvmlDeviceSetApplicationsClocks(device_handle, current_memory_clock, current_core_clock));
-
-  std::printf("default clocks:mem-%dMHz\t core-%dMHz,\tCurrent clocks:mem-%dMHz\t core-%dMHz\n\n", default_memory_clock, default_core_clock, current_memory_clock, current_core_clock);
 }
 
-void scaling_nvidia::change_frequency(frequency memory_frequency, frequency core_frequency)
+void scaling_nvidia::set_device_frequency(frequency memory_frequency, frequency core_frequency)
 {
   synergy_check_nvml(nvmlDeviceSetApplicationsClocks(device_handle, static_cast<uint32_t>(memory_frequency), static_cast<uint32_t>(core_frequency)));
-
-  std::printf("default clocks:mem-%dMHz\t core-%dMHz,\tCurrent clocks:mem-%dMHz\t core-%dMHz\n\n", default_memory_clock, default_core_clock, current_memory_clock, current_core_clock);
 }
 
 scaling_nvidia::~scaling_nvidia()
@@ -106,7 +102,6 @@ scaling_nvidia::~scaling_nvidia()
   synergy_check_nvml(nvmlDeviceGetClockInfo(device_handle, NVML_CLOCK_MEM, &curr_mem));
   synergy_check_nvml(nvmlDeviceGetClockInfo(device_handle, NVML_CLOCK_GRAPHICS, &curr_core));
 
-  std::printf("\ndefault clocks:mem-%dMHz\t core-%dMHz,\tCurrent clocks:mem-%dMHz\t core-%dMHz\n", default_memory_clock, default_core_clock, curr_mem, curr_core);
   synergy_check_nvml(nvmlDeviceResetApplicationsClocks(device_handle));
 }
 

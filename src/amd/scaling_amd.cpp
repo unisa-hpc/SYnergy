@@ -23,7 +23,7 @@ scaling_amd::scaling_amd()
   }
 }
 
-std::vector<frequency> scaling_amd::memory_frequencies()
+std::vector<frequency> scaling_amd::query_supported_frequencies()
 {
   std::vector<frequency> mem_freq;
 
@@ -35,7 +35,7 @@ std::vector<frequency> scaling_amd::memory_frequencies()
   return mem_freq;
 }
 
-std::vector<frequency> scaling_amd::core_frequencies(frequency memory_frequency)
+std::vector<frequency> scaling_amd::query_supported_core_frequencies(frequency memory_frequency)
 {
   std::vector<frequency> core_freq;
 
@@ -47,8 +47,31 @@ std::vector<frequency> scaling_amd::core_frequencies(frequency memory_frequency)
   return core_freq;
 }
 
-void scaling_amd::change_frequency(frequency_preset memory_frequency, frequency_preset core_frequency) {}
-void scaling_amd::change_frequency(frequency memory_frequency, frequency core_frequency) {}
+void scaling_amd::set_device_frequency(frequency_preset memory_frequency, frequency_preset core_frequency)
+{
+  rsmi_frequencies_t memory, core;
+  synergy_check_rsmi(rsmi_dev_gpu_clk_freq_get(device_handle, RSMI_CLK_TYPE_MEM, &memory));
+  synergy_check_rsmi(rsmi_dev_gpu_clk_freq_get(device_handle, RSMI_CLK_TYPE_SYS, &core));
+}
+
+void scaling_amd::set_device_frequency(frequency memory_frequency, frequency core_frequency)
+{
+  uint32_t mem_index = memory_clocks.at(memory_frequency);
+  uint32_t core_index = core_clocks.at(core_frequency);
+
+  current_memory_clock = memory_frequency;
+  current_core_clock = core_frequency;
+
+  uint64_t mem_freq_bitmask = 1UL;
+  uint32_t shift_amt = memory_clocks.size() + (memory_clocks.size() - 1) - mem_index;
+  mem_freq_bitmask <<= (64 - shift_amt);
+  synergy_check_rsmi(rsmi_dev_gpu_clk_freq_set(device_handle, RSMI_CLK_TYPE_MEM, mem_freq_bitmask));
+
+  uint64_t core_freq_bitmask = 1UL;
+  shift_amt = core_clocks.size() + (core_clocks.size() - 1) - core_index;
+  core_freq_bitmask <<= (64 - shift_amt);
+  synergy_check_rsmi(rsmi_dev_gpu_clk_freq_set(device_handle, RSMI_CLK_TYPE_SYS, core_freq_bitmask));
+}
 
 scaling_amd::~scaling_amd()
 {

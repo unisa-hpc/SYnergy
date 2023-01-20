@@ -5,5 +5,6 @@
 #include "queue.hpp"
 #include "scaling_interface.hpp"
 #include "types.h"
+#include <sycl/sycl.hpp>
 
 #endif

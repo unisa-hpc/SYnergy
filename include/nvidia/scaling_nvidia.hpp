@@ -11,11 +11,11 @@ class scaling_nvidia : public scaling_interface {
 public:
   scaling_nvidia();
 
-  std::vector<frequency> memory_frequencies();
-  std::vector<frequency> core_frequencies(frequency memory_frequency);
+  std::vector<frequency> query_supported_frequencies();
+  std::vector<frequency> query_supported_core_frequencies(frequency memory_frequency);
 
-  void change_frequency(frequency_preset memory_frequency, frequency_preset core_frequency);
-  void change_frequency(frequency memory_frequency, frequency core_frequency);
+  void set_device_frequency(frequency_preset memory_frequency, frequency_preset core_frequency);
+  void set_device_frequency(frequency memory_frequency, frequency core_frequency);
 
   ~scaling_nvidia();
 
