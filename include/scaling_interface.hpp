@@ -8,10 +8,13 @@ namespace synergy {
 
 class scaling_interface {
 public:
-  virtual std::vector<frequency> query_supported_frequencies() = 0;
-  virtual std::vector<frequency> query_supported_core_frequencies(frequency memory_frequency) = 0;
+  virtual std::vector<frequency> get_supported_memory_frequencies() = 0;
 
-  virtual void set_device_frequency(frequency_preset memory_frequency, frequency_preset core_frequency) = 0;
+  // Supported core frequencies may or may not depend on current memory frequency
+  virtual std::vector<frequency> get_supported_core_frequencies() = 0;
+
+  virtual void set_memory_frequency(frequency) = 0;
+  virtual void set_core_frequency(frequency) = 0;
   virtual void set_device_frequency(frequency memory_frequency, frequency core_frequency) = 0;
 
   virtual ~scaling_interface() = default;

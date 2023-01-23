@@ -26,18 +26,6 @@ public:
   queue(Args &&...args)
       : base(std::forward<Args>(args)...)
   {
-    auto &&args_tuple = std::forward_as_tuple(std::forward<Args>(args)...);
-    if constexpr (::details::is_present_v<sycl::property_list, Args...>) {
-      sycl::property_list &&prop = std::get<::details::Index<sycl::property_list, Args...>::value>(args_tuple);
-      if (!prop.has_property<sycl::property::queue::enable_profiling>()) {
-        throw std::runtime_error("synergy::queue: enable_profiling property is required");
-      }
-    } else {
-      if constexpr (!::details::is_present_v<sycl::property::queue::enable_profiling, Args...>) {
-        throw std::runtime_error("synergy::queue: enable_profiling property is required");
-      }
-    }
-
     initialize_queue();
   }
 
@@ -54,14 +42,14 @@ public:
     return m_energy->consumption();
   }
 
-  inline std::vector<frequency> query_supported_frequencies()
+  inline std::vector<frequency> query_supported_memory_frequencies()
   {
-    return m_scaling->query_supported_frequencies();
+    return m_scaling->get_supported_memory_frequencies();
   }
 
-  inline std::vector<frequency> query_supported_core_frequencies(frequency memory_frequency)
+  inline std::vector<frequency> query_supported_core_frequencies()
   {
-    return m_scaling->query_supported_core_frequencies(memory_frequency);
+    return m_scaling->get_supported_core_frequencies();
   }
 
 private:

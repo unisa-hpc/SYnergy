@@ -27,8 +27,6 @@ void queue::initialize_queue()
   } else {
     throw std::runtime_error("synergy::queue: vendor \"" + vendor + "\" not supported");
   }
-
-  m_scaling->set_device_frequency(frequency_preset::default_frequency, frequency_preset::max_frequency);
 }
 
 } // namespace synergy

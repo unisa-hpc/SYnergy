@@ -11,25 +11,23 @@ class scaling_nvidia : public scaling_interface {
 public:
   scaling_nvidia();
 
-  std::vector<frequency> query_supported_frequencies();
-  std::vector<frequency> query_supported_core_frequencies(frequency memory_frequency);
+  std::vector<frequency> get_supported_memory_frequencies();
+  std::vector<frequency> get_supported_core_frequencies();
 
-  void set_device_frequency(frequency_preset memory_frequency, frequency_preset core_frequency);
+  void set_memory_frequency(frequency);
+  void set_core_frequency(frequency);
   void set_device_frequency(frequency memory_frequency, frequency core_frequency);
 
   ~scaling_nvidia();
 
 private:
   nvmlDevice_t device_handle;
-
-  uint32_t default_memory_clock;
-  uint32_t default_core_clock;
-
-  uint32_t min_memory_clock;
-  uint32_t max_memory_clock;
+  bool frequency_has_changed = false;
 
   uint32_t current_memory_clock;
   uint32_t current_core_clock;
+
+  void prepare_scaling();
 };
 
 } // namespace synergy

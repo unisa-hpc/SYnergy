@@ -15,6 +15,12 @@ scaling_amd::scaling_amd()
   default_memory_clock = current_memory_clock = memory.frequency[memory.current];
   default_core_clock = current_core_clock = core.frequency[core.current];
 
+  min_memory_clock = memory.frequency[0];
+  min_core_clock = core.frequency[0];
+
+  max_memory_clock = memory.frequency[memory.num_supported - 1];
+  max_core_clock = core.frequency[core.num_supported - 1];
+
   for (int i = 0; i < memory.num_supported; i++) {
     memory_clocks.insert(std::pair(memory.frequency[i], i));
   }
@@ -23,7 +29,7 @@ scaling_amd::scaling_amd()
   }
 }
 
-std::vector<frequency> scaling_amd::query_supported_frequencies()
+std::vector<frequency> scaling_amd::get_supported_memory_frequencies()
 {
   std::vector<frequency> mem_freq;
 
@@ -35,7 +41,7 @@ std::vector<frequency> scaling_amd::query_supported_frequencies()
   return mem_freq;
 }
 
-std::vector<frequency> scaling_amd::query_supported_core_frequencies(frequency memory_frequency)
+std::vector<frequency> scaling_amd::get_supported_core_frequencies()
 {
   std::vector<frequency> core_freq;
 
@@ -47,35 +53,51 @@ std::vector<frequency> scaling_amd::query_supported_core_frequencies(frequency m
   return core_freq;
 }
 
-void scaling_amd::set_device_frequency(frequency_preset memory_frequency, frequency_preset core_frequency)
+void scaling_amd::set_memory_frequency(frequency freq)
 {
-  rsmi_frequencies_t memory, core;
-  synergy_check_rsmi(rsmi_dev_gpu_clk_freq_get(device_handle, RSMI_CLK_TYPE_MEM, &memory));
-  synergy_check_rsmi(rsmi_dev_gpu_clk_freq_get(device_handle, RSMI_CLK_TYPE_SYS, &core));
+  uint32_t mem_clock_index = memory_clocks.at(freq);
+
+  synergy_check_rsmi(rsmi_dev_gpu_clk_freq_set(device_handle, RSMI_CLK_TYPE_MEM, make_bitmask(memory_clocks.size(), mem_clock_index)));
+
+  current_memory_clock = freq;
+  frequency_has_changed = true;
+}
+
+void scaling_amd::set_core_frequency(frequency freq)
+{
+  uint32_t core_clock_index = core_clocks.at(freq);
+
+  synergy_check_rsmi(rsmi_dev_gpu_clk_freq_set(device_handle, RSMI_CLK_TYPE_SYS, make_bitmask(core_clocks.size(), core_clock_index)));
+
+  current_core_clock = freq;
+  frequency_has_changed = true;
 }
 
 void scaling_amd::set_device_frequency(frequency memory_frequency, frequency core_frequency)
 {
-  uint32_t mem_index = memory_clocks.at(memory_frequency);
-  uint32_t core_index = core_clocks.at(core_frequency);
+  uint32_t mem_clock_index = memory_clocks.at(memory_frequency);
+  uint32_t core_clock_index = core_clocks.at(core_frequency);
+
+  synergy_check_rsmi(rsmi_dev_gpu_clk_freq_set(device_handle, RSMI_CLK_TYPE_MEM, make_bitmask(memory_clocks.size(), mem_clock_index)));
+  synergy_check_rsmi(rsmi_dev_gpu_clk_freq_set(device_handle, RSMI_CLK_TYPE_SYS, make_bitmask(core_clocks.size(), core_clock_index)));
 
   current_memory_clock = memory_frequency;
   current_core_clock = core_frequency;
-
-  uint64_t mem_freq_bitmask = 1UL;
-  uint32_t shift_amt = memory_clocks.size() + (memory_clocks.size() - 1) - mem_index;
-  mem_freq_bitmask <<= (64 - shift_amt);
-  synergy_check_rsmi(rsmi_dev_gpu_clk_freq_set(device_handle, RSMI_CLK_TYPE_MEM, mem_freq_bitmask));
-
-  uint64_t core_freq_bitmask = 1UL;
-  shift_amt = core_clocks.size() + (core_clocks.size() - 1) - core_index;
-  core_freq_bitmask <<= (64 - shift_amt);
-  synergy_check_rsmi(rsmi_dev_gpu_clk_freq_set(device_handle, RSMI_CLK_TYPE_SYS, core_freq_bitmask));
+  frequency_has_changed = true;
 }
 
 scaling_amd::~scaling_amd()
 {
-  synergy_check_rsmi(rsmi_dev_gpu_reset(device_handle));
+  if (frequency_has_changed)
+    synergy_check_rsmi(rsmi_dev_gpu_reset(device_handle));
+}
+
+uint64_t scaling_amd::make_bitmask(uint32_t supported_clocks, uint32_t clock_index)
+{
+  uint64_t freq_bitmask = 1UL;
+  uint32_t shift_amount = supported_clocks + (supported_clocks - 1) - clock_index;
+  freq_bitmask <<= (64 - shift_amount);
+  return freq_bitmask;
 }
 
 } // namespace synergy

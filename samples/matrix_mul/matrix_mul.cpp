@@ -47,7 +47,7 @@ void mat_mul(sy::queue &q, size_t n, value_type *a, value_type *b, value_type *c
 int main()
 {
   // Create a queue with a default device
-  sy::queue q(sycl::gpu_selector_v, sycl::property::queue::enable_profiling{}); // Enable queue profiling by default
+  sy::queue q(sycl::gpu_selector_v);
 
   // Create some buffers
   int n = 4096;
