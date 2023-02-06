@@ -1,8 +1,10 @@
 #ifndef SYNERGY_ENERGY_NVIDIA_H
 #define SYNERGY_ENERGY_NVIDIA_H
 
-#include "../profiling_interface.hpp"
 #include <nvml.h>
+#include <sycl/sycl.hpp>
+
+#include "profiling_interface.hpp"
 
 namespace synergy {
 

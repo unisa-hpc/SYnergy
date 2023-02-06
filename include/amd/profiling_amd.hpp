@@ -1,9 +1,11 @@
 #ifndef SYNERGY_ENERGY_AMD_H
 #define SYNERGY_ENERGY_AMD_H
 
+#include <rocm_smi/rocm_smi.h>
+#include <sycl/sycl.hpp>
+
 #include "../profiling_interface.hpp"
 #include "utils.hpp"
-#include <rocm_smi/rocm_smi.h>
 
 namespace synergy {
 

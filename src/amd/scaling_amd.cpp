@@ -1,6 +1,7 @@
-#include "../../include/amd/scaling_amd.hpp"
-#include "../../include/amd/utils.hpp"
 #include <rocm_smi/rocm_smi.h>
+
+#include "amd/scaling_amd.hpp"
+#include "amd/utils.hpp"
 
 namespace synergy {
 
@@ -11,15 +12,6 @@ scaling_amd::scaling_amd()
   rsmi_frequencies_t memory, core;
   synergy_check_rsmi(rsmi_dev_gpu_clk_freq_get(device_handle, RSMI_CLK_TYPE_MEM, &memory));
   synergy_check_rsmi(rsmi_dev_gpu_clk_freq_get(device_handle, RSMI_CLK_TYPE_SYS, &core));
-
-  default_memory_clock = current_memory_clock = memory.frequency[memory.current];
-  default_core_clock = current_core_clock = core.frequency[core.current];
-
-  min_memory_clock = memory.frequency[0];
-  min_core_clock = core.frequency[0];
-
-  max_memory_clock = memory.frequency[memory.num_supported - 1];
-  max_core_clock = core.frequency[core.num_supported - 1];
 
   for (int i = 0; i < memory.num_supported; i++) {
     memory_clocks.insert(std::pair(memory.frequency[i], i));

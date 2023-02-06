@@ -1,7 +1,8 @@
-#include "../../include/nvidia/scaling_nvidia.hpp"
-#include "../../include/nvidia/utils.hpp"
 #include <array>
 #include <nvml.h>
+
+#include "nvidia/scaling_nvidia.hpp"
+#include "nvidia/utils.hpp"
 
 namespace synergy {
 

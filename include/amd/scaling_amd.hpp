@@ -1,10 +1,12 @@
 #ifndef SYNERGY_SCALING_AMD_H
 #define SYNERGY_SCALING_AMD_H
 
+#include <map>
+
+#include <rocm_smi/rocm_smi.h>
+
 #include "../scaling_interface.hpp"
 #include "utils.hpp"
-#include <map>
-#include <rocm_smi/rocm_smi.h>
 
 namespace synergy {
 

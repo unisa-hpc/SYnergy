@@ -1,9 +1,10 @@
 #ifndef _SYNERGY_SCALING_NVIDIA_H
 #define _SYNERGY_SCALING_NVIDIA_H
 
-#include "../scaling_interface.hpp"
-#include "utils.hpp"
 #include <nvml.h>
+
+#include "scaling_interface.hpp"
+#include "utils.hpp"
 
 namespace synergy {
 

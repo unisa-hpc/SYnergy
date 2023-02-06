@@ -1,4 +1,4 @@
-#include "../include/queue.hpp"
+#include "queue.hpp"
 
 namespace synergy {
 
@@ -17,7 +17,7 @@ void queue::initialize_queue()
 #else
     throw std::runtime_error("synergy::queue: vendor \"" + vendor + "\" not supported");
 #endif
-  } else if (vendor.find("amd") != std::string::npos) {
+  } else if (vendor.find("amd") != std::string::npos || vendor.find("advanced micro devices") != std::string::npos) {
 #ifdef SYNERGY_ROCM_SUPPORT
     m_energy = std::make_unique<profiling_amd>();
     m_scaling = std::make_unique<scaling_amd>();

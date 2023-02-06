@@ -1,9 +1,11 @@
 #include <future>
 #include <thread>
 
-#include "../../include/amd/profiling_amd.hpp"
-#include "../../include/amd/utils.hpp"
 #include <rocm_smi/rocm_smi.h>
+#include <sycl/sycl.hpp>
+
+#include "amd/profiling_amd.hpp"
+#include "amd/utils.hpp"
 
 namespace synergy {
 

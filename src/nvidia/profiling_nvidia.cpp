@@ -1,9 +1,11 @@
 #include <future>
 #include <thread>
 
-#include "../../include/nvidia/profiling_nvidia.hpp"
-#include "../../include/nvidia/utils.hpp"
 #include <nvml.h>
+#include <sycl/sycl.hpp>
+
+#include "nvidia/profiling_nvidia.hpp"
+#include "nvidia/utils.hpp"
 
 namespace synergy {
 

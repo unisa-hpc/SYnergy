@@ -1,8 +1,9 @@
 #ifndef SYNERGY_SCALING_INTERFACE_H
 #define SYNERGY_SCALING_INTERFACE_H
 
-#include "types.h"
 #include <vector>
+
+#include "types.h"
 
 namespace synergy {
 

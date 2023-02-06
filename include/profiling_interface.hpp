@@ -1,5 +1,6 @@
 #ifndef SYNERGY_PROFILING_INTERFACE_H
 #define SYNERGY_PROFILING_INTERFACE_H
+
 #include <sycl/sycl.hpp>
 
 namespace synergy {

@@ -35,7 +35,11 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 # ###################### SYnergy ######################
+find_package(Threads REQUIRED)
+
 add_library(synergy STATIC)
+
+target_link_libraries(synergy PUBLIC Threads::Threads)
 
 if(SYNERGY_SYCL_BACKEND STREQUAL hipSYCL)
 	add_sycl_to_target(TARGET synergy)
