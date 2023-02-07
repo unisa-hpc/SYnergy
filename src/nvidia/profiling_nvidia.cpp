@@ -1,4 +1,5 @@
 #include <future>
+#include <iostream>
 #include <thread>
 
 #include <nvml.h>
@@ -11,8 +12,8 @@ namespace synergy {
 
 profiling_nvidia::profiling_nvidia()
 {
-  synergy_check_nvml(nvmlInit());
-  synergy_check_nvml(nvmlDeviceGetHandleByIndex(0, &device_handle));
+  synergy_only_success(nvmlInit());
+  synergy_only_success(nvmlDeviceGetHandleByIndex(0, &device_handle));
 
   energy_function = [this](sycl::event e) {
     uint32_t power;
@@ -27,7 +28,7 @@ profiling_nvidia::profiling_nvidia()
 #endif
 
     while (e.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete) {
-      synergy_check_nvml(nvmlDeviceGetPowerUsage(device_handle, &power));
+      synergy_only_success(nvmlDeviceGetPowerUsage(device_handle, &power));
 
       kernel_energy += power * sampling_rate / 1000.0; // Get the integral of the power usage over the interval
 
@@ -40,7 +41,7 @@ profiling_nvidia::profiling_nvidia()
 
 profiling_nvidia::~profiling_nvidia()
 {
-  synergy_check_nvml(nvmlShutdown());
+  synergy_only_success(nvmlShutdown());
 }
 
 void profiling_nvidia::profile(sycl::event &e)

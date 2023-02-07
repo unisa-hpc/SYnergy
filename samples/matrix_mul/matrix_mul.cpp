@@ -63,6 +63,11 @@ int main()
 
   // Launch the computation
   mat_mul(q, n, a, b, c);
+  std::cout << "Energy consumption: " << q.energy_consumption() << " j\n";
+  mat_mul(q, n, a, b, c);
+  std::cout << "Energy consumption: " << q.energy_consumption() << " j\n";
+  mat_mul(q, n, a, b, c);
+  std::cout << "Energy consumption: " << q.energy_consumption() << " j\n";
 
   // Check
   for (int i = 0; i < n * n; i++) {
@@ -71,8 +76,6 @@ int main()
       return 1;
     }
   }
-
-  std::cout << "Energy consumption: " << q.energy_consumption() << " j\n";
 
   // Cleanup
   delete[] a;
