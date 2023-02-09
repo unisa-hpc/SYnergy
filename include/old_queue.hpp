@@ -1,9 +1,9 @@
-#pragma once
+#ifndef SYNERGY_QUEUE_H
+#define SYNERGY_QUEUE_H
 
 #include <sycl/sycl.hpp>
 
 #include "profiling_interface.hpp"
-#include "runtime.hpp"
 #include "scaling_interface.hpp"
 #include "types.h"
 #include "utils.hpp"
@@ -16,49 +16,49 @@ public:
   using base = sycl::queue;
 
   template <typename... Args, std::enable_if_t<!::details::is_present_v<sycl::property_list, Args...> && !::details::has_property_v<Args...>, bool> = true>
-  queue(Args&&... args)
+  queue(Args &&...args)
       : base(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{})
   {
-    if (!synergy::runtime::is_initialized)
-      synergy::runtime::initialize();
-
-    runtime& syn = runtime::get_instance();
-
     initialize_queue();
   }
 
   template <typename... Args, std::enable_if_t<::details::is_present_v<sycl::property_list, Args...> || ::details::has_property_v<Args...>, bool> = true>
-  queue(Args&&... args)
+  queue(Args &&...args)
       : base(std::forward<Args>(args)...)
   {
     initialize_queue();
   }
 
   template <typename... Args>
-  inline sycl::event submit(Args&&... args)
+  inline sycl::event submit(Args &&...args)
   {
-    auto&& event = sycl::queue::submit(std::forward<Args>(args)...);
-
-    // start profiling using profiler
-
+    auto &&event = sycl::queue::submit(std::forward<Args>(args)...);
+    m_energy->profile(event);
     return event;
   }
 
   inline double energy_consumption()
   {
-    return 0.0;
+    return m_energy->consumption();
   }
 
-  inline device<std::any> get_synergy_device()
+  inline std::vector<frequency> query_supported_memory_frequencies()
   {
+    return m_scaling->get_supported_memory_frequencies();
+  }
+
+  inline std::vector<frequency> query_supported_core_frequencies()
+  {
+    return m_scaling->get_supported_core_frequencies();
   }
 
 private:
-  device<std::any> device;
-  // need a structure to store per-kernel energy consumption
-  // need a structure to store queue energy consumption
+  std::unique_ptr<profiling_interface> m_energy;
+  std::unique_ptr<scaling_interface> m_scaling;
 
   void initialize_queue();
 };
 
 } // namespace synergy
+
+#endif // SYNERGY_QUEUE_H

@@ -6,8 +6,6 @@
 
 namespace synergy {
 
-namespace detail {
-
 namespace management {
 
 struct rsmi {
@@ -18,10 +16,8 @@ struct rsmi {
 
 } // namespace management
 
-} // namespace detail
-
 template <>
-class management_wrapper<detail::management::rsmi> {
+class management_wrapper<management::rsmi> {
 
 public:
   inline unsigned int get_devices_count()
@@ -31,22 +27,13 @@ public:
     return count;
   }
 
-  inline void initialize()
-  {
-    rsmi_init(0);
-  }
+  inline void initialize() { rsmi_init(0); }
 
-  inline void shutdown()
-  {
-    rsmi_shut_down();
-  }
+  inline void shutdown() { rsmi_shut_down(); }
 
-  using rsmi = detail::management::rsmi;
+  using rsmi = management::rsmi;
 
-  inline rsmi::device_handle get_device_handle(rsmi::device_identifier id)
-  {
-    return id;
-  }
+  inline rsmi::device_handle get_device_handle(rsmi::device_identifier id) { return id; }
 
   inline power get_power_usage(rsmi::device_handle handle)
   {

@@ -8,8 +8,6 @@
 
 namespace synergy {
 
-namespace detail {
-
 namespace management {
 struct nvml {
   static constexpr unsigned int max_frequencies = 128;
@@ -19,10 +17,8 @@ struct nvml {
 
 } // namespace management
 
-} // namespace detail
-
 template <>
-class management_wrapper<detail::management::nvml> {
+class management_wrapper<management::nvml> {
 
 public:
   inline unsigned int get_devices_count()
@@ -33,17 +29,11 @@ public:
     return count;
   }
 
-  inline void initialize()
-  {
-    nvmlInit();
-  }
+  inline void initialize() { nvmlInit(); }
 
-  inline void shutdown()
-  {
-    nvmlShutdown();
-  }
+  inline void shutdown() { nvmlShutdown(); }
 
-  using nvml = detail::management::nvml;
+  using nvml = management::nvml;
 
   inline nvml::device_handle get_device_handle(nvml::device_identifier id)
   {
@@ -125,7 +115,21 @@ public:
 
   inline void setup_profiling(nvml::device_handle) {}
 
-  inline void setup_scaling(nvml::device_handle) {}
+  inline void setup_scaling(nvml::device_handle handle)
+  {
+    nvmlDeviceArchitecture_t device_arch;
+    nvmlDeviceGetArchitecture(handle, &device_arch);
+
+    if (device_arch < NVML_DEVICE_ARCH_PASCAL) { // we need to disable Auto Boost
+      nvmlEnableState_t persistence_mode_state;
+
+      nvmlDeviceGetPersistenceMode(handle, &persistence_mode_state);
+      if (persistence_mode_state == NVML_FEATURE_DISABLED)
+        nvmlDeviceSetPersistenceMode(handle, NVML_FEATURE_ENABLED); // requires root access
+
+      nvmlDeviceSetAutoBoostedClocksEnabled(handle, NVML_FEATURE_DISABLED);
+    }
+  }
 };
 
 } // namespace synergy

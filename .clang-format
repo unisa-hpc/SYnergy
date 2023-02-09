@@ -3,6 +3,8 @@ ColumnLimit: 0
 IndentWidth: 2
 ContinuationIndentWidth: 1
 AlignAfterOpenBracket: BlockIndent
+PointerAlignment: Left
+
 
 BreakBeforeBraces: Custom
 BraceWrapping:
