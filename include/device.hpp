@@ -53,6 +53,11 @@ public:
     return library.get_power_usage(handle);
   }
 
+  inline unsigned get_power_sampling_rate()
+  {
+    return vendor::sampling_rate;
+  }
+
 private:
   management_wrapper<vendor> library;
   vendor::device_handle handle;

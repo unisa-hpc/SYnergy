@@ -11,6 +11,7 @@ namespace synergy {
 namespace management {
 struct nvml {
   static constexpr unsigned int max_frequencies = 128;
+  static constexpr unsigned int sampling_rate = 15; // ms
   using device_identifier = unsigned int;
   using device_handle = nvmlDevice_t;
 };
