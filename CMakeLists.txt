@@ -49,6 +49,7 @@ target_include_directories(synergy PUBLIC include)
 target_sources(synergy
 	PRIVATE
 	src/queue.cpp
+	src/runtime.cpp
 )
 
 if(SYNERGY_CUDA_SUPPORT)
@@ -62,8 +63,7 @@ if(SYNERGY_CUDA_SUPPORT)
 	target_link_libraries(synergy PRIVATE CUDA::nvml)
 	target_sources(synergy
 		PRIVATE
-		src/nvidia/profiling_nvidia.cpp
-		src/nvidia/scaling_nvidia.cpp
+		include/vendors/nvml_wrapper.hpp
 	)
 endif()
 
@@ -78,8 +78,7 @@ if(SYNERGY_ROCM_SUPPORT)
 	target_link_libraries(synergy PRIVATE ${ROCM_SMI_LIBRARIES})
 	target_sources(synergy
 		PRIVATE
-		src/amd/profiling_amd.cpp
-		src/amd/scaling_amd.cpp
+		include/vendors/rsmi_wrapper.hpp
 	)
 endif()
 

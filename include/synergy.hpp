@@ -1,11 +1,6 @@
-#ifndef SYNERGY_LIB_H
-#define SYNERGY_LIB_H
+#pragma once
 
 #include <sycl/sycl.hpp>
 
-#include "profiling_interface.hpp"
 #include "queue.hpp"
-#include "scaling_interface.hpp"
-#include "types.h"
-
-#endif
+#include "types.hpp"

@@ -4,8 +4,9 @@
 int main()
 {
   synergy::queue q{sycl::gpu_selector_v};
-  auto mem_freq = q.query_supported_memory_frequencies();
-  auto core_freq = q.query_supported_core_frequencies();
+  auto device = q.get_synergy_device();
+  auto mem_freq = device->supported_uncore_frequencies();
+  auto core_freq = device->supported_core_frequencies();
 
   std::cout << "mem_freq: ";
   for (auto freq : mem_freq)

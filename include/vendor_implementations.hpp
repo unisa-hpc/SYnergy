@@ -1,9 +1,9 @@
+#pragma once
+
 #ifdef SYNERGY_CUDA_SUPPORT
-#include "nvidia/profiling_nvidia.hpp"
-#include "nvidia/scaling_nvidia.hpp"
+#include "vendors/nvml_wrapper.hpp"
 #endif
 
 #ifdef SYNERGY_ROCM_SUPPORT
-#include "amd/profiling_amd.hpp"
-#include "amd/scaling_amd.hpp"
+#include "vendors/rsmi_wrapper.hpp"
 #endif

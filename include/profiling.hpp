@@ -1,21 +1,22 @@
 #pragma once
 
+#include <memory>
+
 #include <sycl/sycl.hpp>
 
 #include "device.hpp"
-#include "queue.hpp"
+#include "kernel.hpp"
 
 namespace synergy {
 
 class profiler {
 public:
-  profiler(queue& queue)
-      : queue{queue} {}
+  profiler(synergy::kernel& kernel, std::shared_ptr<synergy::device> device)
+      : kernel{kernel}, device{device} {}
 
-  void operator()(sycl::event& event)
+  void operator()()
   {
-    auto device = queue.get_synergy_device();
-
+    sycl::event event = kernel.event;
     // Wait until start
 #ifdef __HIPSYCL__
     event.get_profiling_info<sycl::info::event_profiling::command_start>(); // not working on DPC++
@@ -26,22 +27,22 @@ public:
 
     // TODO: manage multiple kernel execution on the same queue
 
-    auto sampling_rate = device.get_power_sampling_rate();
+    auto sampling_rate = device->get_power_sampling_rate();
     double energy_sample = 0.0;
-    double& kernel_energy = queue.kernels_energy.find(event)->second;
 
     while (event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete) {
-      energy_sample = device.get_power_usage() * sampling_rate / 1000000.0; // Get the integral of the power usage over the interval
+      energy_sample = device->get_power_usage() * sampling_rate / 1000000.0; // Get the integral of the power usage over the interval
 
-      kernel_energy += energy_sample;
-      queue.energy += energy_sample;
+      kernel.energy += energy_sample;
+      device->increase_energy_consumption(energy_sample);
 
       std::this_thread::sleep_for(std::chrono::milliseconds(sampling_rate));
     }
   }
 
 private:
-  queue& queue; // reference to the main thread queue (beware of race conditions)
+  std::shared_ptr<synergy::device> device;
+  synergy::kernel& kernel; // reference to the main thread kernel (beware of race conditions)
 };
 
 } // namespace synergy

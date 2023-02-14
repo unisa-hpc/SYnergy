@@ -5,43 +5,42 @@ namespace sy = synergy;
 
 using value_type = double;
 
-void mat_mul(sy::queue &q, size_t n, value_type *a, value_type *b, value_type *c)
+sycl::event mat_mul(sy::queue& q, size_t n, value_type* a, value_type* b, value_type* c)
 {
   sycl::buffer<value_type, 2> a_buf(a, {n, n});
   sycl::buffer<value_type, 2> b_buf(b, {n, n});
   sycl::buffer<value_type, 2> c_buf(c, {n, n});
 
-  q.submit(
-    [&](sycl::handler &h) {
-      sycl::accessor a_acc{a_buf, h};
-      sycl::accessor b_acc{b_buf, h};
-      sycl::accessor c_acc{c_buf, h};
+  return q.submit(
+   [&](sycl::handler& h) {
+     sycl::accessor a_acc{a_buf, h};
+     sycl::accessor b_acc{b_buf, h};
+     sycl::accessor c_acc{c_buf, h};
 
-      sycl::range<2> grid{n, n};
-      sycl::range<2> block{n < 32 ? n : 32, n < 32 ? n : 32};
+     sycl::range<2> grid{n, n};
+     sycl::range<2> block{n < 32 ? n : 32, n < 32 ? n : 32};
 
-      h.parallel_for<class mat_mul>(sycl::nd_range<2>(grid, block), [=](sycl::nd_item<2> idx) {
-        int i = idx.get_global_id(0);
-        int j = idx.get_global_id(1);
+     h.parallel_for<class mat_mul>(sycl::nd_range<2>(grid, block), [=](sycl::nd_item<2> idx) {
+       int i = idx.get_global_id(0);
+       int j = idx.get_global_id(1);
 
-        c_acc[i][j] = 0.0f;
-        for (int k = 0; k < n; k++) {
-          c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
-        }
+       c_acc[i][j] = 0.0f;
+       for (int k = 0; k < n; k++) {
+         c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
+       }
 
-        c_acc[i][j] = 0.0f;
-        for (int k = 0; k < n; k++) {
-          c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
-        }
+       c_acc[i][j] = 0.0f;
+       for (int k = 0; k < n; k++) {
+         c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
+       }
 
-        c_acc[i][j] = 0.0f;
-        for (int k = 0; k < n; k++) {
-          c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
-        }
-      });
-    }
-  )
-   .wait_and_throw();
+       c_acc[i][j] = 0.0f;
+       for (int k = 0; k < n; k++) {
+         c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
+       }
+     });
+   }
+  );
 }
 
 int main()
@@ -51,9 +50,9 @@ int main()
 
   // Create some buffers
   int n = 4096;
-  value_type *a = new value_type[n * n];
-  value_type *b = new value_type[n * n];
-  value_type *c = new value_type[n * n];
+  value_type* a = new value_type[n * n];
+  value_type* b = new value_type[n * n];
+  value_type* c = new value_type[n * n];
 
   // Initialize the matrices
   for (int i = 0; i < n * n; i++) {
@@ -62,12 +61,9 @@ int main()
   }
 
   // Launch the computation
-  mat_mul(q, n, a, b, c);
-  std::cout << "Energy consumption: " << q.energy_consumption() << " j\n";
-  mat_mul(q, n, a, b, c);
-  std::cout << "Energy consumption: " << q.energy_consumption() << " j\n";
-  mat_mul(q, n, a, b, c);
-  std::cout << "Energy consumption: " << q.energy_consumption() << " j\n";
+  sycl::event ev = mat_mul(q, n, a, b, c);
+
+  std::cout << "Energy consumption: " << q.kernel_energy_consumption(ev) << " j\n";
 
   // Check
   for (int i = 0; i < n * n; i++) {

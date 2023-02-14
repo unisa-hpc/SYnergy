@@ -1,68 +1,35 @@
 #pragma once
 
 #include "management_wrapper.hpp"
-#include "types.h"
+#include "types.hpp"
 
 namespace synergy {
 
-// TODO: synergy::device need some kind of 1:n relation to sycl::device
-template <typename vendor>
 class device {
-
 public:
-  inline device(vendor::device_identifier id)
-  {
-    library.initialize();
-    handle = library.get_device_handle(id);
+  virtual std::vector<frequency> supported_core_frequencies() = 0;
 
-    current_core_frequency = library.get_core_frequency();
-    current_uncore_frequency = library.get_uncore_frequency();
-  }
+  virtual std::vector<frequency> supported_uncore_frequencies() = 0;
 
-  inline ~device() { library.shutdown(); }
+  virtual frequency get_core_frequency() = 0;
 
-  inline std::vector<frequency> supported_core_frequencies() { return library.get_supported_core_frequencies(handle); }
+  virtual frequency get_uncore_frequency() = 0;
 
-  inline std::vector<frequency> supported_uncore_frequencies() { return library.get_supported_uncore_frequencies(handle); }
+  virtual void set_core_frequency(frequency target) = 0;
 
-  inline frequency get_core_frequency() { return current_core_frequency; }
+  virtual void set_uncore_frequency(frequency target) = 0;
 
-  inline frequency get_uncore_frequency() { return current_uncore_frequency; }
+  virtual void set_all_frequencies(frequency core, frequency uncore) = 0;
 
-  inline void set_core_frequency(frequency target)
-  {
-    library.set_core_frequency(handle, target);
-    current_core_frequency = target;
-  }
+  virtual power get_power_usage() = 0;
 
-  inline void set_uncore_frequency(frequency target)
-  {
-    library.set_uncore_frequency(handle, target);
-    current_uncore_frequency = target;
-  }
+  virtual unsigned get_power_sampling_rate() = 0;
 
-  inline void set_all_frequencies(frequency core, frequency uncore)
-  {
-    library.set_all_frequencies(handle, core, uncore);
-    current_core_frequency = core;
-    current_uncore_frequency = uncore;
-  }
-
-  inline power get_power_usage()
-  {
-    return library.get_power_usage(handle);
-  }
-
-  inline unsigned get_power_sampling_rate()
-  {
-    return vendor::sampling_rate;
-  }
+  inline double get_energy_consumption() { return energy; }
+  inline void increase_energy_consumption(double energy_increase) { energy += energy_increase; }
 
 private:
-  management_wrapper<vendor> library;
-  vendor::device_handle handle;
-  frequency current_core_frequency;
-  frequency current_uncore_frequency;
+  double energy = 0.0;
 };
 
 } // namespace synergy

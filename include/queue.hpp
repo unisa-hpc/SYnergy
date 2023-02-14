@@ -1,14 +1,15 @@
 #pragma once
 
-#include <atomic>
 #include <future>
 #include <thread>
-#include <unordered_set>
+#include <unordered_map>
 
 #include <sycl/sycl.hpp>
 
+#include "kernel.hpp"
 #include "profiling.hpp"
 #include "runtime.hpp"
+#include "types.hpp"
 #include "utils.hpp"
 
 namespace synergy {
@@ -17,42 +18,53 @@ class queue : public sycl::queue {
 public:
   using base = sycl::queue;
 
-  friend class profiler;
-
   template <typename... Args, std::enable_if_t<!::details::is_present_v<sycl::property_list, Args...> && !::details::has_property_v<Args...>, bool> = true>
   queue(Args&&... args)
       : base(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{})
   {
-    if (!synergy::runtime::is_initialized)
+    if (!synergy::runtime::is_initialized())
       synergy::runtime::initialize();
 
     runtime& syn = runtime::get_instance();
+    device = syn.assign_device(get_device());
   }
 
   template <typename... Args, std::enable_if_t<::details::is_present_v<sycl::property_list, Args...> || ::details::has_property_v<Args...>, bool> = true>
   queue(Args&&... args)
-      : base(std::forward<Args>(args)...) {}
+      : base(std::forward<Args>(args)...)
+  {
+    if (!synergy::runtime::is_initialized())
+      synergy::runtime::initialize();
+
+    runtime& syn = runtime::get_instance();
+    device = syn.assign_device(get_device());
+  }
 
   template <typename... Args>
   inline sycl::event submit(Args&&... args)
   {
-    auto&& event = sycl::queue::submit(std::forward<Args>(args)...);
+    sycl::event event = sycl::queue::submit(std::forward<Args>(args)...);
+    kernel k{event};
 
-    kernels_energy.insert({event, 0.0});
-    std::async(std::launch::async, profiler{*this}, event);
+    auto async = std::async(std::launch::async, profiler(kernels.insert({event, k}).first->second, device));
 
     return event;
   }
 
-  device<std::any> get_synergy_device() const;
+  inline std::shared_ptr<device> get_synergy_device() const { return device; }
 
-  inline double energy_consumption() const { return energy; }
-  double kernel_energy_consumption(sycl::event& event);
+  inline double kernel_energy_consumption(sycl::event& event) const
+  {
+    auto search = kernels.find(event);
+    if (search == kernels.end())
+      throw std::runtime_error("synergy::queue error: kernel was not submitted to the queue");
+
+    return search->second.energy;
+  }
 
 private:
-  device<std::any> device;
-  double energy = 0.0;
-  std::unordered_map<sycl::event, double> kernels_energy;
+  std::shared_ptr<device> device;
+  std::unordered_map<sycl::event, kernel> kernels;
 };
 
 } // namespace synergy

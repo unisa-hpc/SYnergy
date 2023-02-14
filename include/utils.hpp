@@ -1,5 +1,4 @@
-#ifndef SYNERGY_UTILS_H
-#define SYNERGY_UTILS_H
+#pragma once
 
 namespace details {
 
@@ -55,4 +54,3 @@ template <class... Args>
 inline constexpr bool has_property_v = has_property<Args...>();
 
 } // namespace details
-#endif // SYNERGY_UTILS_H
