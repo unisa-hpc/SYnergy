@@ -25,6 +25,17 @@ if(SYNERGY_SYCL_BACKEND STREQUAL "dpc++") # CMAKE_CXX_COMPILER must be set to cl
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend --cuda-gpu-arch=${SYNERGY_CUDA_ARCH}")
 		endif()
 	endif()
+
+	if(SYNERGY_ROCM_SUPPORT) 
+		set(SYNERGY_ROCM_ARCH "" CACHE STRING "ROCm architecture number")
+
+		if(NOT SYNERGY_ROCM_ARCH STREQUAL "")
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=amd_gpu_gfx${SYNERGY_ROCM_ARCH}")
+		else()
+			message(SEND_ERROR "Variable SYNERGY_ROCM_ARCH must be set to the AMD GPU architecture")
+		endif()
+	endif()
+
 endif()
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -48,7 +59,6 @@ endif()
 target_include_directories(synergy PUBLIC include)
 target_sources(synergy
 	PRIVATE
-	src/queue.cpp
 	src/runtime.cpp
 )
 

@@ -17,7 +17,7 @@ public:
   void operator()()
   {
     sycl::event event = kernel.event;
-    // Wait until start
+// Wait until start
 #ifdef __HIPSYCL__
     event.get_profiling_info<sycl::info::event_profiling::command_start>(); // not working on DPC++
 #else
@@ -25,12 +25,14 @@ public:
       ;
 #endif
 
+    std::cout << "command started\n";
     // TODO: manage multiple kernel execution on the same queue
 
     auto sampling_rate = device->get_power_sampling_rate();
     double energy_sample = 0.0;
 
     while (event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete) {
+
       energy_sample = device->get_power_usage() * sampling_rate / 1000000.0; // Get the integral of the power usage over the interval
 
       kernel.energy += energy_sample;

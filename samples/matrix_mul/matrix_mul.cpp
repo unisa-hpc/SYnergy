@@ -62,6 +62,7 @@ int main()
 
   // Launch the computation
   sycl::event ev = mat_mul(q, n, a, b, c);
+  ev.wait_and_throw();
 
   std::cout << "Energy consumption: " << q.kernel_energy_consumption(ev) << " j\n";
 

@@ -31,29 +31,37 @@ runtime::runtime()
 {
   using namespace sycl;
 
-  for (platform& plat : platform::get_platforms()) {
+  auto platforms = platform::get_platforms();
+  int count_hip = 0;
 
-    std::string vendor = plat.get_info<info::platform::vendor>();
-    std::transform(vendor.begin(), vendor.end(), vendor.begin(), ::tolower);
+  for (int i = 0; i < platforms.size(); i++) {
+
+    std::string platform_name = platforms[i].get_info<info::platform::name>();
+    std::transform(platform_name.begin(), platform_name.end(), platform_name.begin(), ::tolower);
+
+#ifdef SYNERGY_PROOF
+    std::cout << "\nplatform: " << platforms[i].get_info<info::platform::name>() << " ";
+#endif
 
 #ifdef SYNERGY_CUDA_SUPPORT
-    if (vendor.find("nvidia") != std::string::npos) {
-      auto nvidia_devices = plat.get_devices(info::device_type::gpu);
+    if (platform_name.find("cuda") != std::string::npos) {
+      auto nvidia_devices = platforms[i].get_devices(info::device_type::gpu);
 
-      for (int i = 0; i < nvidia_devices.size(); i++) {
-        auto ptr = std::make_shared<vendor_device<synergy::management::nvml>>(i);
-        devices.insert({nvidia_devices[i], ptr});
+      for (int j = 0; j < nvidia_devices.size(); j++) {
+        auto ptr = std::make_shared<vendor_device<synergy::management::nvml>>(j);
+        devices.insert({nvidia_devices[j], ptr});
       }
     }
 #endif
 
 #ifdef SYNERGY_ROCM_SUPPORT
-    if (vendor.find("amd") != std::string::npos || vendor.find("advanced micro devices") != std::string::npos) {
-      auto amd_devices = plat.get_devices(info::device_type::gpu);
+    if (platform_name.find("hip") != std::string::npos) {
+      auto amd_devices = platforms[i].get_devices(info::device_type::gpu);
 
-      for (int i = 0; i < amd_devices.size(); i++) {
-        auto ptr = std::make_shared<vendor_device<synergy::management::rsmi>>(i);
-        devices.insert({amd_devices[i], ptr});
+      for (int j = 0; j < amd_devices.size(); j++) {
+        auto ptr = std::make_shared<vendor_device<synergy::management::rsmi>>(count_hip); // passing count_hip is not an error: compile with SYNERGY_PROOF
+        count_hip++;                                                                      // there is one platform for each AMD HIP GPU
+        devices.insert({amd_devices[j], ptr});
       }
     }
 #endif

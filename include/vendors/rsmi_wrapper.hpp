@@ -30,7 +30,10 @@ public:
 
   inline void initialize() { rsmi_init(0); }
 
-  inline void shutdown() { rsmi_shut_down(); }
+  inline void shutdown()
+  {
+    /*rsmi_shut_down();*/
+  }
 
   using rsmi = management::rsmi;
 
