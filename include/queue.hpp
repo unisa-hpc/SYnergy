@@ -10,29 +10,20 @@
 #include "profiling.hpp"
 #include "runtime.hpp"
 #include "types.hpp"
-#include "utils.hpp"
 
 namespace synergy {
 
 class queue : public sycl::queue {
 public:
-  using base = sycl::queue;
-
-  template <typename... Args, std::enable_if_t<!::details::is_present_v<sycl::property_list, Args...> && !::details::has_property_v<Args...>, bool> = true>
+  template <typename... Args>
   queue(Args&&... args)
-      : base(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{})
   {
-    if (!synergy::runtime::is_initialized())
-      synergy::runtime::initialize();
+    if constexpr ((std::is_same_v<sycl::property::queue::enable_profiling, Args> || ...)) {
+      sycl::queue(std::forward<Args>(args)...)
+    } else {
+      sycl::queue(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{})
+    }
 
-    runtime& syn = runtime::get_instance();
-    device = syn.assign_device(get_device());
-  }
-
-  template <typename... Args, std::enable_if_t<::details::is_present_v<sycl::property_list, Args...> || ::details::has_property_v<Args...>, bool> = true>
-  queue(Args&&... args)
-      : base(std::forward<Args>(args)...)
-  {
     if (!synergy::runtime::is_initialized())
       synergy::runtime::initialize();
 
@@ -41,10 +32,20 @@ public:
   }
 
   template <typename... Args>
+  queue(Args&&... args, frequency uncore_frequency, frequency core_frequency)
+  {
+    queue(std::forward<Args>(args)...);
+
+    core_target_frequency = core_frequency;
+    uncore_target_frequency = uncore_frequency;
+  }
+
+  // TODO: when should the frequency be changed?
+  template <typename... Args>
   inline sycl::event submit(Args&&... args)
   {
     sycl::event event = sycl::queue::submit(std::forward<Args>(args)...);
-    kernel k{event};
+    kernel k{event, core_target_frequency, uncore_target_frequency};
 
     auto async = std::async(std::launch::async, profiler(kernels.insert({event, k}).first->second, device));
 
@@ -65,6 +66,9 @@ public:
 private:
   std::shared_ptr<device> device;
   std::unordered_map<sycl::event, kernel> kernels;
+
+  frequency core_target_frequency = 0;
+  frequency uncore_target_frequency = 0;
 };
 
 } // namespace synergy
