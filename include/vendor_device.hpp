@@ -33,12 +33,14 @@ public:
   {
     library.set_core_frequency(handle, target);
     current_core_frequency = target;
+    current_uncore_frequency = library.get_uncore_frequency(handle);
   }
 
   inline virtual void set_uncore_frequency(frequency target)
   {
     library.set_uncore_frequency(handle, target);
     current_uncore_frequency = target;
+    current_core_frequency = library.get_core_frequency(handle);
   }
 
   inline virtual void set_all_frequencies(frequency core, frequency uncore)

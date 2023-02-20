@@ -24,15 +24,12 @@ public:
       sycl::queue(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{});
     }
 
-    if (!synergy::runtime::is_initialized())
-      synergy::runtime::initialize();
-
     runtime& syn = runtime::get_instance();
     device = syn.assign_device(get_device());
   }
 
   template <typename... Args>
-  queue(Args&&... args, frequency uncore_frequency, frequency core_frequency)
+  queue(frequency uncore_frequency, frequency core_frequency, Args&&... args)
   {
     queue(std::forward<Args>(args)...);
 
@@ -40,7 +37,6 @@ public:
     uncore_target_frequency = uncore_frequency;
   }
 
-  // TODO: when should the frequency be changed?
   template <typename... Args>
   inline sycl::event submit(Args&&... args)
   {

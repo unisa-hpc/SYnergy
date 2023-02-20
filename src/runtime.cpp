@@ -9,20 +9,11 @@
 #include "vendor_implementations.hpp"
 
 namespace synergy {
-std::unique_ptr<runtime> runtime::instance = nullptr;
-
-void runtime::initialize()
-{
-  assert(instance == nullptr);
-  instance = std::unique_ptr<runtime>(new runtime());
-}
 
 runtime& runtime::get_instance()
 {
-  if (instance == nullptr) {
-    throw std::runtime_error("synergy::runtime was not initialized");
-  }
-  return *instance;
+  static runtime r;
+  return r;
 }
 
 // TODO: handle the case where different platform may expose the same device (very-low priority, since there is no way to do it properly in SYCL)

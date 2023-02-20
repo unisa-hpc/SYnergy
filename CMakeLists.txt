@@ -26,7 +26,7 @@ if(SYNERGY_SYCL_BACKEND STREQUAL "dpc++") # CMAKE_CXX_COMPILER must be set to cl
 		endif()
 	endif()
 
-	if(SYNERGY_ROCM_SUPPORT) 
+	if(SYNERGY_ROCM_SUPPORT)
 		set(SYNERGY_ROCM_ARCH "" CACHE STRING "ROCm architecture number")
 
 		if(NOT SYNERGY_ROCM_ARCH STREQUAL "")
@@ -35,7 +35,6 @@ if(SYNERGY_SYCL_BACKEND STREQUAL "dpc++") # CMAKE_CXX_COMPILER must be set to cl
 			message(SEND_ERROR "Variable SYNERGY_ROCM_ARCH must be set to the AMD GPU architecture")
 		endif()
 	endif()
-
 endif()
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
