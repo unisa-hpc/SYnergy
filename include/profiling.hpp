@@ -25,7 +25,9 @@ public:
       ;
 #endif
 
-    std::cout << "command started\n";
+    if (kernel.has_target)
+      device->set_all_frequencies(kernel.core_target_frequency, kernel.uncore_target_frequency);
+
     // TODO: manage multiple kernel execution on the same queue
 
     auto sampling_rate = device->get_power_sampling_rate();

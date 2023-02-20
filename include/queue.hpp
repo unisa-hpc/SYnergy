@@ -19,9 +19,9 @@ public:
   queue(Args&&... args)
   {
     if constexpr ((std::is_same_v<sycl::property::queue::enable_profiling, Args> || ...)) {
-      sycl::queue(std::forward<Args>(args)...)
+      sycl::queue(std::forward<Args>(args)...);
     } else {
-      sycl::queue(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{})
+      sycl::queue(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{});
     }
 
     if (!synergy::runtime::is_initialized())
