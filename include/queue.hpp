@@ -37,6 +37,14 @@ public:
     uncore_target_frequency = uncore_frequency;
   }
 
+  // esplicitly declared to avoid clashes with the variadic constructor
+  queue(queue&) = default;
+  queue(const queue&) = default;
+  queue(queue&&) = default;
+  queue& operator=(const queue&) = default;
+  queue& operator=(queue&) = default;
+  queue& operator=(queue&&) = default;
+
   template <typename... Args>
   inline sycl::event submit(Args&&... args)
   {
