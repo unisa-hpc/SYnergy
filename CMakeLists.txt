@@ -7,13 +7,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(SYNERGY_CUDA_SUPPORT "Enable CUDA support" OFF)
 option(SYNERGY_ROCM_SUPPORT "Enable ROCm support" OFF)
 
-set(SYNERGY_SYCL_BACKEND "" CACHE STRING "Select SYCL backend [hipSYCL | dpc++]")
+set(SYNERGY_SYCL_BACKEND "" CACHE STRING "Select SYCL backend [hipSYCL | dpcpp]")
 
 if(SYNERGY_SYCL_BACKEND STREQUAL hipSYCL)
 	find_package(hipSYCL REQUIRED)
 endif()
 
-if(SYNERGY_SYCL_BACKEND STREQUAL "dpc++") # CMAKE_CXX_COMPILER must be set to clang++
+if(SYNERGY_SYCL_BACKEND STREQUAL "dpcpp") # CMAKE_CXX_COMPILER must be set to clang++
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
 
 	if(SYNERGY_CUDA_SUPPORT)
@@ -47,19 +47,11 @@ endif()
 # ###################### SYnergy ######################
 find_package(Threads REQUIRED)
 
-add_library(synergy STATIC)
+add_library(synergy INTERFACE)
 
-target_link_libraries(synergy PUBLIC Threads::Threads)
+target_link_libraries(synergy INTERFACE Threads::Threads)
 
-if(SYNERGY_SYCL_BACKEND STREQUAL hipSYCL)
-	add_sycl_to_target(TARGET synergy)
-endif()
-
-target_include_directories(synergy PUBLIC include)
-target_sources(synergy
-	PRIVATE
-	src/runtime.cpp
-)
+target_include_directories(synergy INTERFACE include)
 
 if(SYNERGY_CUDA_SUPPORT)
 	find_package(CUDAToolkit REQUIRED)
@@ -68,12 +60,9 @@ if(SYNERGY_CUDA_SUPPORT)
 		message(SEND_ERROR "CUDA Toolkit not found")
 	endif()
 
-	target_compile_definitions(synergy PRIVATE "SYNERGY_CUDA_SUPPORT")
-	target_link_libraries(synergy PRIVATE CUDA::nvml)
-	target_sources(synergy
-		PRIVATE
-		include/vendors/nvml_wrapper.hpp
-	)
+	target_compile_definitions(synergy INTERFACE "SYNERGY_CUDA_SUPPORT")
+	target_link_libraries(synergy INTERFACE CUDA::nvml)
+	target_sources(synergy INTERFACE include/vendors/nvml_wrapper.hpp)
 endif()
 
 if(SYNERGY_ROCM_SUPPORT)
@@ -83,16 +72,13 @@ if(SYNERGY_ROCM_SUPPORT)
 		message(SEND_ERROR "ROCm SMI library not found")
 	endif()
 
-	target_compile_definitions(synergy PRIVATE SYNERGY_ROCM_SUPPORT)
-	target_link_libraries(synergy PRIVATE ${ROCM_SMI_LIBRARIES})
-	target_sources(synergy
-		PRIVATE
-		include/vendors/rsmi_wrapper.hpp
-	)
+	target_compile_definitions(synergy INTERFACE SYNERGY_ROCM_SUPPORT)
+	target_link_libraries(synergy INTERFACE ${ROCM_SMI_LIBRARIES})
+	target_sources(synergy INTERFACE include/vendors/rsmi_wrapper.hpp)
 endif()
 
 # ##################### Samples ######################
-option(SYNERGY_BUILD_SAMPLES "Build samples" OFF)
+option(SYNERGY_BUILD_SAMPLES "Build samples" ON)
 
 if(SYNERGY_BUILD_SAMPLES)
 	add_subdirectory(samples)

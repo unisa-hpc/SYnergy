@@ -5,6 +5,8 @@
 #include "types.hpp"
 
 namespace synergy {
+
+namespace detail {
 struct kernel {
 
   kernel(sycl::event event, frequency core_target_frequency, frequency uncore_target_frequency)
@@ -20,4 +22,7 @@ struct kernel {
   frequency uncore_target_frequency;
   bool has_target = false;
 };
+
+} // namespace detail
+
 } // namespace synergy

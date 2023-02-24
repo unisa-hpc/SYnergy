@@ -24,7 +24,7 @@ public:
       sycl::queue(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{});
     }
 
-    runtime& syn = runtime::get_instance();
+    detail::runtime& syn = detail::runtime::get_instance();
     device = syn.assign_device(get_device());
   }
 
@@ -49,14 +49,14 @@ public:
   inline sycl::event submit(Args&&... args)
   {
     sycl::event event = sycl::queue::submit(std::forward<Args>(args)...);
-    kernel k{event, core_target_frequency, uncore_target_frequency};
+    detail::kernel k{event, core_target_frequency, uncore_target_frequency};
 
-    auto async = std::async(std::launch::async, profiler(kernels.insert({event, k}).first->second, device));
+    auto async = std::async(std::launch::async, detail::profiler(kernels.insert({event, k}).first->second, device));
 
     return event;
   }
 
-  inline std::shared_ptr<device> get_synergy_device() const { return device; }
+  inline device get_synergy_device() const { return device; }
 
   inline double kernel_energy_consumption(sycl::event& event) const
   {
@@ -68,8 +68,8 @@ public:
   }
 
 private:
-  std::shared_ptr<device> device;
-  std::unordered_map<sycl::event, kernel> kernels;
+  device device;
+  std::unordered_map<sycl::event, detail::kernel> kernels;
 
   frequency core_target_frequency = 0;
   frequency uncore_target_frequency = 0;

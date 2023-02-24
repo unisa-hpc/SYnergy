@@ -14,8 +14,8 @@ int main()
   synergy::queue q{gpu_backend_selector};
 
   auto device = q.get_synergy_device();
-  auto mem_freq = device->supported_uncore_frequencies();
-  auto core_freq = device->supported_core_frequencies();
+  auto mem_freq = device.supported_uncore_frequencies();
+  auto core_freq = device.supported_core_frequencies();
 
   std::cout << "mem_freq: ";
   for (auto freq : mem_freq)

@@ -1,35 +1,41 @@
 #pragma once
 
-#include "management_wrapper.hpp"
+#include <memory>
+
+#include "device_impl.hpp"
 #include "types.hpp"
 
 namespace synergy {
 
 class device {
 public:
-  virtual std::vector<frequency> supported_core_frequencies() = 0;
+  device() = default;
+  device(std::shared_ptr<detail::device_impl> impl) : impl{impl} {}
 
-  virtual std::vector<frequency> supported_uncore_frequencies() = 0;
+  inline std::vector<frequency> supported_core_frequencies() { return impl->supported_core_frequencies(); }
 
-  virtual frequency get_core_frequency() = 0;
+  inline std::vector<frequency> supported_uncore_frequencies() { return impl->supported_uncore_frequencies(); }
 
-  virtual frequency get_uncore_frequency() = 0;
+  inline frequency get_core_frequency() { return impl->get_core_frequency(); }
 
-  virtual void set_core_frequency(frequency target) = 0;
+  inline frequency get_uncore_frequency() { return impl->get_uncore_frequency(); }
 
-  virtual void set_uncore_frequency(frequency target) = 0;
+  inline void set_core_frequency(frequency target) { impl->set_core_frequency(target); }
 
-  virtual void set_all_frequencies(frequency core, frequency uncore) = 0;
+  inline void set_uncore_frequency(frequency target) { impl->set_uncore_frequency(target); }
 
-  virtual power get_power_usage() = 0;
+  inline void set_all_frequencies(frequency core, frequency uncore) { impl->set_all_frequencies(core, uncore); }
 
-  virtual unsigned get_power_sampling_rate() = 0;
+  inline power get_power_usage() { return impl->get_power_usage(); }
 
-  inline double get_energy_consumption() { return energy; }
-  inline void increase_energy_consumption(double energy_increase) { energy += energy_increase; }
+  inline unsigned get_power_sampling_rate() { return impl->get_power_sampling_rate(); }
+
+  inline double get_energy_consumption() { return impl->get_energy_consumption(); }
+
+  inline void increase_energy_consumption(double energy_increase) { impl->increase_energy_consumption(energy_increase); }
 
 private:
-  double energy = 0.0;
+  std::shared_ptr<detail::device_impl> impl;
 };
 
 } // namespace synergy
