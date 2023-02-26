@@ -50,6 +50,12 @@ public:
 
   inline device get_synergy_device() const { return device; }
 
+  inline void set_target_frequencies(frequency uncore_frequency, frequency core_frequency)
+  {
+    core_target_frequency = core_frequency;
+    uncore_target_frequency = uncore_frequency;
+  }
+
   inline double kernel_energy_consumption(sycl::event& event) const
   {
     auto search = kernels.find(event);
