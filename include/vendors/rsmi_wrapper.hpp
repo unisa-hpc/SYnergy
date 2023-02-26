@@ -132,7 +132,7 @@ public:
 
   inline void setup_scaling(rsmi::device_handle) const {}
 
-  inline std::string error_string(rsmi::return_type return_value)
+  inline std::string error_string(rsmi::return_type return_value) const
   {
     const char* error_string;
     rsmi_status_string(return_value, &error_string);

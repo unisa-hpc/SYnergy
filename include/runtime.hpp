@@ -69,7 +69,7 @@ private:
         for (int j = 0; j < devs.size(); j++) {
           auto ptr = std::make_shared<vendor_device<management::rsmi>>(count_hip); // passing count_hip is not an error: compile with SYNERGY_PROOF
           count_hip++;                                                             // there is one platform for each AMD HIP GPU
-          devices.insert({devs[j], dynergy::device{ptr}});
+          devices.insert({devs[j], synergy::device{ptr}});
         }
       }
 #endif

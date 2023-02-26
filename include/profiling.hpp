@@ -17,11 +17,12 @@ public:
   void operator()()
   {
     sycl::event event = kernel.event;
+
 // Wait until start
 #ifdef __HIPSYCL__
-    event.get_profiling_info<sycl::info::event_profiling::command_start>(); // not working on DPC++
+    event.get_profiling_info<sycl::info::event_profiling::command_start>(); // not working on DPC++ and on HIP with hipSYCL
 #else
-    while (event.get_info<sycl::info::event::command_execution_status>() == sycl::info::event_command_status::submitted)
+    while (event.get_info<sycl::info::event::command_execution_status>() == sycl::info::event_command_status::submitted) // not working hipSYCL CUDA and HIP (infinite loop)
       ;
 #endif
 
