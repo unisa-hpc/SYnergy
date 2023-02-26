@@ -17,6 +17,8 @@ public:
   void operator()()
   {
     sycl::event event = kernel.event;
+    auto sampling_rate = device.get_power_sampling_rate();
+    double energy_sample = 0.0;
 
 // Wait until start
 #ifdef __HIPSYCL__
@@ -26,14 +28,16 @@ public:
       ;
 #endif
 
-    if (kernel.has_target)
-      device.set_all_frequencies(kernel.core_target_frequency, kernel.uncore_target_frequency);
+    // TODO: this should be moved somewhere else
+    if (kernel.has_target) {
+      try {
+        device.set_all_frequencies(kernel.core_target_frequency, kernel.uncore_target_frequency);
+      } catch (const std::exception& e) {
+        std::cerr << e.what() << '\n';
+      }
+    }
 
     // TODO: manage multiple kernel execution on the same queue
-
-    auto sampling_rate = device.get_power_sampling_rate();
-    double energy_sample = 0.0;
-
     while (event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete) {
 
       energy_sample = device.get_power_usage() * sampling_rate / 1000000.0; // Get the integral of the power usage over the interval
