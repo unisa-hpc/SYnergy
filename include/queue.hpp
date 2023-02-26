@@ -17,22 +17,14 @@ class queue : public sycl::queue {
 public:
   template <typename... Args>
   queue(Args&&... args)
-  {
-    if constexpr ((std::is_same_v<sycl::property::queue::enable_profiling, Args> || ...)) {
-      sycl::queue(std::forward<Args>(args)...);
-    } else {
-      sycl::queue(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{});
-    }
-
-    detail::runtime& syn = detail::runtime::get_instance();
-    device = syn.assign_device(get_device());
-  }
+      : sycl::queue(synergy::queue::check_args(std::forward<Args>(args)...)),
+        device{synergy::detail::runtime::synergy_device_from(get_device())} {}
 
   template <typename... Args>
   queue(frequency uncore_frequency, frequency core_frequency, Args&&... args)
+      : sycl::queue(synergy::queue::check_args(std::forward<Args>(args)...)),
+        device{synergy::detail::runtime::synergy_device_from(get_device())}
   {
-    queue(std::forward<Args>(args)...);
-
     core_target_frequency = core_frequency;
     uncore_target_frequency = uncore_frequency;
   }
@@ -73,6 +65,15 @@ private:
 
   frequency core_target_frequency = 0;
   frequency uncore_target_frequency = 0;
+
+  template <typename... Args>
+  static sycl::queue check_args(Args&&... args)
+  {
+    if constexpr ((std::is_same_v<sycl::property::queue::enable_profiling, Args> || ...))
+      return sycl::queue(std::forward<Args>(args)...);
+    else
+      return sycl::queue(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{});
+  }
 };
 
 } // namespace synergy

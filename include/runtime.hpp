@@ -14,16 +14,12 @@ namespace detail {
 
 class runtime {
 public:
-  static runtime& get_instance()
+  static synergy::device synergy_device_from(const sycl::device& sycl_device)
   {
     static runtime r;
-    return r;
-  }
 
-  synergy::device assign_device(const sycl::device& sycl_device)
-  {
-    auto search = devices.find(sycl_device);
-    if (search == devices.end())
+    auto search = r.devices.find(sycl_device);
+    if (search == r.devices.end())
       throw std::runtime_error("error while assigning synergy::device to queue: sycl::device not supported");
 
     return search->second;
