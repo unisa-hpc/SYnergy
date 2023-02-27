@@ -17,10 +17,6 @@ int main() {
   std::vector<value_type> b(n * n);
   std::vector<value_type> c(n * n);
 
-  a.resize(n * n);
-  b.resize(n * n);
-  c.resize(n * n);
-
   std::fill(a.begin(), a.end(), 1.0);
   std::fill(b.begin(), b.end(), 1.0);
 

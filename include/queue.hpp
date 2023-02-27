@@ -42,7 +42,7 @@ public:
     sycl::event event;
 
     if (has_target) {
-      sycl::event scaling_event = sycl::queue::submit([&](sycl::handler h) {
+      sycl::event scaling_event = sycl::queue::submit([&](sycl::handler& h) {
         try {
           device.set_all_frequencies(core_target_frequency, uncore_target_frequency);
         } catch (const std::exception& e) {
@@ -51,7 +51,7 @@ public:
       });
 
       event = sycl::queue::submit(
-          [&](sycl::handler h) {
+          [&](sycl::handler& h) {
             h.depends_on(scaling_event);
             cfg(h);
           },
