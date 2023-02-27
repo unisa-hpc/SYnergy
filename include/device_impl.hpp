@@ -38,8 +38,7 @@ template <typename vendor>
 class vendor_device : public device_impl {
 
 public:
-  inline vendor_device(typename vendor::device_identifier id)
-  {
+  inline vendor_device(typename vendor::device_identifier id) {
     library.initialize();
     handle = library.get_device_handle(id);
 
@@ -57,34 +56,29 @@ public:
 
   inline virtual frequency get_uncore_frequency() { return current_uncore_frequency; }
 
-  inline virtual void set_core_frequency(frequency target)
-  {
+  inline virtual void set_core_frequency(frequency target) {
     library.set_core_frequency(handle, target);
     current_core_frequency = target;
     current_uncore_frequency = library.get_uncore_frequency(handle);
   }
 
-  inline virtual void set_uncore_frequency(frequency target)
-  {
+  inline virtual void set_uncore_frequency(frequency target) {
     library.set_uncore_frequency(handle, target);
     current_uncore_frequency = target;
     current_core_frequency = library.get_core_frequency(handle);
   }
 
-  inline virtual void set_all_frequencies(frequency core, frequency uncore)
-  {
+  inline virtual void set_all_frequencies(frequency core, frequency uncore) {
     library.set_all_frequencies(handle, core, uncore);
     current_core_frequency = core;
     current_uncore_frequency = uncore;
   }
 
-  inline virtual power get_power_usage()
-  {
+  inline virtual power get_power_usage() {
     return library.get_power_usage(handle);
   }
 
-  inline virtual unsigned get_power_sampling_rate()
-  {
+  inline virtual unsigned get_power_sampling_rate() {
     return vendor::sampling_rate;
   }
 

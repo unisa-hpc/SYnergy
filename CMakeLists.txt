@@ -53,6 +53,12 @@ target_link_libraries(synergy INTERFACE Threads::Threads)
 
 target_include_directories(synergy INTERFACE include)
 
+option(SYNERGY_ENABLE_PROFILING "Enable energy consumption profiling" OFF)
+
+if(SYNERGY_ENABLE_PROFILING)
+	target_compile_definitions(synergy INTERFACE SYNERGY_ENABLE_PROFILING)
+endif()
+
 if(SYNERGY_CUDA_SUPPORT)
 	find_package(CUDAToolkit REQUIRED)
 

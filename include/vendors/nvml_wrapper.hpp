@@ -26,8 +26,7 @@ template <>
 class management_wrapper<management::nvml> {
 
 public:
-  inline unsigned int get_devices_count() const
-  {
+  inline unsigned int get_devices_count() const {
     unsigned int count = 0;
     check(nvmlDeviceGetCount(&count));
 
@@ -40,22 +39,19 @@ public:
 
   using nvml = management::nvml;
 
-  inline nvml::device_handle get_device_handle(nvml::device_identifier id) const
-  {
+  inline nvml::device_handle get_device_handle(nvml::device_identifier id) const {
     nvml::device_handle handle;
     check(nvmlDeviceGetHandleByIndex(id, &handle));
     return handle;
   }
 
-  inline power get_power_usage(nvml::device_handle handle) const
-  {
+  inline power get_power_usage(nvml::device_handle handle) const {
     unsigned int power;
     check(nvmlDeviceGetPowerUsage(handle, &power)); // milliwatts
     return power * 1000;                            // return microwatts
   }
 
-  inline std::vector<frequency> get_supported_core_frequencies(nvml::device_handle handle) const
-  {
+  inline std::vector<frequency> get_supported_core_frequencies(nvml::device_handle handle) const {
     using namespace std;
 
     unsigned int current_uncore_frequency = get_uncore_frequency(handle);
@@ -71,8 +67,7 @@ public:
     return frequencies;
   }
 
-  inline std::vector<frequency> get_supported_uncore_frequencies(nvml::device_handle handle) const
-  {
+  inline std::vector<frequency> get_supported_uncore_frequencies(nvml::device_handle handle) const {
     using namespace std;
 
     array<unsigned int, nvml::max_frequencies> memory_frequencies;
@@ -87,28 +82,24 @@ public:
     return frequencies;
   }
 
-  inline frequency get_core_frequency(nvml::device_handle handle) const
-  {
+  inline frequency get_core_frequency(nvml::device_handle handle) const {
     unsigned int frequency;
     check(nvmlDeviceGetApplicationsClock(handle, NVML_CLOCK_GRAPHICS, &frequency));
     return frequency;
   }
 
-  inline frequency get_uncore_frequency(nvml::device_handle handle) const
-  {
+  inline frequency get_uncore_frequency(nvml::device_handle handle) const {
     unsigned int frequency;
     check(nvmlDeviceGetApplicationsClock(handle, NVML_CLOCK_MEM, &frequency));
     return frequency;
   }
 
-  inline void set_core_frequency(nvml::device_handle handle, frequency target) const
-  {
+  inline void set_core_frequency(nvml::device_handle handle, frequency target) const {
     unsigned int uncore_frequency = get_uncore_frequency(handle);
     check(nvmlDeviceSetApplicationsClocks(handle, uncore_frequency, target));
   }
 
-  inline void set_uncore_frequency(nvml::device_handle handle, frequency target) const
-  {
+  inline void set_uncore_frequency(nvml::device_handle handle, frequency target) const {
     std::array<unsigned int, nvml::max_frequencies> core_frequencies;
     unsigned int count_core_frequencies;
     check(nvmlDeviceGetSupportedGraphicsClocks(handle, target, &count_core_frequencies, core_frequencies.data()));
@@ -116,15 +107,13 @@ public:
     check(nvmlDeviceSetApplicationsClocks(handle, target, core_frequencies[0])); // put highest core frequency
   }
 
-  inline void set_all_frequencies(nvml::device_handle handle, frequency core, frequency uncore) const
-  {
+  inline void set_all_frequencies(nvml::device_handle handle, frequency core, frequency uncore) const {
     check(nvmlDeviceSetApplicationsClocks(handle, uncore, core));
   }
 
   inline void setup_profiling(nvml::device_handle) const {}
 
-  inline void setup_scaling(nvml::device_handle handle) const
-  {
+  inline void setup_scaling(nvml::device_handle handle) const {
     nvmlDeviceArchitecture_t device_arch;
     check(nvmlDeviceGetArchitecture(handle, &device_arch));
 
@@ -139,8 +128,7 @@ public:
     }
   }
 
-  inline std::string error_string(nvml::return_type return_value) const
-  {
+  inline std::string error_string(nvml::return_type return_value) const {
     return std::string{nvmlErrorString(return_value)};
   }
 

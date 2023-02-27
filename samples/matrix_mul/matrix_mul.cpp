@@ -1,81 +1,62 @@
 #include <iostream>
+#include <vector>
+
 #include <synergy.hpp>
 
-namespace sy = synergy;
+using namespace sycl;
 
 using value_type = double;
 
-sycl::event mat_mul(sy::queue& q, size_t n, value_type* a, value_type* b, value_type* c)
-{
-  sycl::buffer<value_type, 2> a_buf(a, {n, n});
-  sycl::buffer<value_type, 2> b_buf(b, {n, n});
-  sycl::buffer<value_type, 2> c_buf(c, {n, n});
-
-  return q.submit(
-   [&](sycl::handler& h) {
-     sycl::accessor a_acc{a_buf, h};
-     sycl::accessor b_acc{b_buf, h};
-     sycl::accessor c_acc{c_buf, h};
-
-     sycl::range<2> grid{n, n};
-     sycl::range<2> block{n < 32 ? n : 32, n < 32 ? n : 32};
-
-     h.parallel_for<class mat_mul>(sycl::nd_range<2>(grid, block), [=](sycl::nd_item<2> idx) {
-       int i = idx.get_global_id(0);
-       int j = idx.get_global_id(1);
-
-       c_acc[i][j] = 0.0f;
-       for (int k = 0; k < n; k++) {
-         c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
-       }
-
-       c_acc[i][j] = 0.0f;
-       for (int k = 0; k < n; k++) {
-         c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
-       }
-
-       c_acc[i][j] = 0.0f;
-       for (int k = 0; k < n; k++) {
-         c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
-       }
-     });
-   }
-  );
-}
-
-int main()
-{
+int main() {
   // Create a queue with a default device
-  sy::queue q(sycl::gpu_selector_v);
+  synergy::queue q(gpu_selector_v);
 
   // Create some buffers
-  int n = 4096;
-  value_type* a = new value_type[n * n];
-  value_type* b = new value_type[n * n];
-  value_type* c = new value_type[n * n];
+  constexpr size_t n = 4096;
+  std::vector<value_type> a(n * n);
+  std::vector<value_type> b(n * n);
+  std::vector<value_type> c(n * n);
 
-  // Initialize the matrices
-  for (int i = 0; i < n * n; i++) {
-    a[i] = 1.0f;
-    b[i] = 1.0f;
-  }
+  a.resize(n * n);
+  b.resize(n * n);
+  c.resize(n * n);
+
+  std::fill(a.begin(), a.end(), 1.0);
+  std::fill(b.begin(), b.end(), 1.0);
+
+  buffer<value_type, 2> a_buf(a.data(), {n, n});
+  buffer<value_type, 2> b_buf(b.data(), {n, n});
+  buffer<value_type, 2> c_buf(c.data(), {n, n});
 
   // Launch the computation
-  sycl::event ev = mat_mul(q, n, a, b, c);
-  ev.wait_and_throw();
+  sycl::event e = q.submit([&](sycl::handler& h) {
+    accessor<value_type, 2, access_mode::read> a_acc{a_buf, h};
+    accessor<value_type, 2, access_mode::read> b_acc{b_buf, h};
+    accessor<value_type, 2, access_mode::read_write> c_acc{c_buf, h};
 
-  std::cout << "Energy consumption: " << q.kernel_energy_consumption(ev) << " j\n";
+    range<2> grid{n, n};
+    range<2> block{n < 32 ? n : 32, n < 32 ? n : 32};
+
+    h.parallel_for<class mat_mul>(sycl::nd_range<2>(grid, block), [=](sycl::nd_item<2> idx) {
+      int i = idx.get_global_id(0);
+      int j = idx.get_global_id(1);
+
+      c_acc[i][j] = 0.0f;
+      for (int k = 0; k < n; k++) {
+        c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
+      }
+    });
+  });
+
+  e.wait_and_throw();
+
+#ifdef SYNERGY_ENERGY_PROFILING
+  std::cout << "Energy consumption: " << q.kernel_energy_consumption(e) << " j\n";
+#endif
 
   // Check
-  for (int i = 0; i < n * n; i++) {
-    if (c[i] != n) {
-      std::cerr << "Error: c[" << i << "] = " << c[i] << " != " << n << std::endl;
-      return 1;
-    }
-  }
-
-  // Cleanup
-  delete[] a;
-  delete[] b;
-  delete[] c;
+  host_accessor<value_type, 2> h_acc{c_buf};
+  for (int i = 0; i < n; i++)
+    for (int j = 0; j < n; j++)
+      assert(h_acc[i][j] == n);
 }

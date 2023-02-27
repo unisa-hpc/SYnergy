@@ -14,8 +14,7 @@ namespace detail {
 
 class runtime {
 public:
-  static synergy::device synergy_device_from(const sycl::device& sycl_device)
-  {
+  static synergy::device synergy_device_from(const sycl::device& sycl_device) {
     static runtime r;
 
     auto search = r.devices.find(sycl_device);
@@ -35,8 +34,7 @@ private:
 
   // TODO: handle the case where different platform may expose the same device (very-low priority, since there is no way to do it properly in SYCL)
   // TODO: make sure that index given to synergy::device constructor is the "same" of the sycl::device
-  runtime()
-  {
+  runtime() {
     using namespace sycl;
 
     auto platforms = platform::get_platforms();
