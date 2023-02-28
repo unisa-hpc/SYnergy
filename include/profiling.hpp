@@ -26,19 +26,10 @@ public:
       ;
 #endif
 
-    // TODO: this should be moved somewhere else
-    // if (kernel.has_target) {
-    //   try {
-    //     device.set_all_frequencies(kernel.core_target_frequency, kernel.uncore_target_frequency);
-    //   } catch (const std::exception& e) {
-    //     std::cerr << e.what() << '\n';
-    //   }
-    // }
-
     // TODO: manage multiple kernel execution on the same queue
     while (kernel.event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete) {
 
-      energy_sample = device.get_power_usage() * sampling_rate / 1000000.0; // Get the integral of the power usage over the interval
+      energy_sample = device.get_power_usage() / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
 
       kernel.energy += energy_sample;
       device.increase_energy_consumption(energy_sample);

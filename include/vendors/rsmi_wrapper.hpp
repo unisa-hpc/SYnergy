@@ -14,7 +14,7 @@ namespace management {
 struct rsmi {
   static constexpr std::string_view name = "RSMI";
   static constexpr unsigned int max_frequencies = RSMI_MAX_NUM_FREQUENCIES;
-  static constexpr unsigned int sampling_rate = 15; // ms
+  static constexpr unsigned int sampling_rate = 5; // ms
   using device_identifier = unsigned int;
   using device_handle = unsigned int;
   using return_type = rsmi_status_t;

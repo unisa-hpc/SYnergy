@@ -12,8 +12,8 @@ namespace detail {
 namespace management {
 struct nvml {
   static constexpr std::string_view name = "NVML";
-  static constexpr unsigned int max_frequencies = 128;
-  static constexpr unsigned int sampling_rate = 15; // ms
+  static constexpr unsigned int max_frequencies = 256;
+  static constexpr unsigned int sampling_rate = 5; // ms
   using device_identifier = unsigned int;
   using device_handle = nvmlDevice_t;
   using return_type = nvmlReturn_t;
