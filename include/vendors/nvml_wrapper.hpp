@@ -124,7 +124,11 @@ public:
       if (persistence_mode_state == NVML_FEATURE_DISABLED)
         check(nvmlDeviceSetPersistenceMode(handle, NVML_FEATURE_ENABLED)); // requires root access
 
-      check(nvmlDeviceSetAutoBoostedClocksEnabled(handle, NVML_FEATURE_DISABLED));
+      nvmlEnableState_t auto_boost_enabled, auto_boost_enabled_default;
+      check(nvmlDeviceGetAutoBoostedClocksEnabled(handle, &auto_boost_enabled, &auto_boost_enabled_default));
+
+      if (auto_boost_enabled == NVML_FEATURE_ENABLED)
+        check(nvmlDeviceSetAutoBoostedClocksEnabled(handle, NVML_FEATURE_DISABLED));
     }
   }
 

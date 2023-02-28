@@ -9,4 +9,8 @@ foreach(target IN LISTS all_targets)
   if(SYNERGY_SYCL_BACKEND STREQUAL hipSYCL)
     add_sycl_to_target(TARGET ${target})
   endif()
+
+  if(SYNERGY_ENABLE_PROFILING)
+    target_compile_definitions(${target} PUBLIC SYNERGY_ENABLE_PROFILING)
+  endif()
 endforeach()
