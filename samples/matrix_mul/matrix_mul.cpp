@@ -46,7 +46,7 @@ int main() {
 
   e.wait_and_throw();
 
-#ifdef SYNERGY_ENERGY_PROFILING
+#ifdef SYNERGY_ENABLE_PROFILING
   std::cout << "Energy consumption: " << q.kernel_energy_consumption(e) << " j\n";
 #endif
 
