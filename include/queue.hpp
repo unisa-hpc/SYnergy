@@ -26,7 +26,6 @@ public:
         device{synergy::detail::runtime::synergy_device_from(get_device())} {
     core_target_frequency = core_frequency;
     uncore_target_frequency = uncore_frequency;
-    has_target = core_target_frequency != 0 && uncore_target_frequency != 0;
   }
 
   // esplicitly declared to avoid clashes with the variadic constructor
@@ -41,7 +40,7 @@ public:
   inline sycl::event submit(T cfg, Args&&... args) {
     sycl::event event;
 
-    if (has_target) {
+    if (has_target()) {
       sycl::event scaling_event = sycl::queue::submit([&](sycl::handler& h) {
         try {
           device.set_all_frequencies(core_target_frequency, uncore_target_frequency);
@@ -98,7 +97,8 @@ private:
 #endif
   frequency core_target_frequency = 0;
   frequency uncore_target_frequency = 0;
-  bool has_target = false;
+
+  inline bool has_target() { return core_target_frequency != 0 && uncore_target_frequency != 0; }
 
   template <typename... Args>
   static sycl::queue check_args(Args&&... args) {

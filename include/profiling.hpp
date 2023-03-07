@@ -30,6 +30,7 @@ public:
     while (kernel.event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete) {
 
       energy_sample = device.get_power_usage() / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
+      // std::cout << "power: " << device.get_power_usage() << ", energy: " << energy_sample << "\n";
 
       kernel.energy += energy_sample;
       device.increase_energy_consumption(energy_sample);

@@ -84,7 +84,7 @@ if(SYNERGY_ROCM_SUPPORT)
 endif()
 
 # ##################### Samples ######################
-option(SYNERGY_BUILD_SAMPLES "Build samples" ON)
+option(SYNERGY_BUILD_SAMPLES "Build samples" OFF)
 
 if(SYNERGY_BUILD_SAMPLES)
 	add_subdirectory(samples)
