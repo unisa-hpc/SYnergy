@@ -13,9 +13,9 @@ public:
 
   virtual std::vector<frequency> supported_uncore_frequencies() = 0;
 
-  virtual frequency get_core_frequency() = 0;
+  virtual frequency get_core_frequency(bool cached = true) = 0;
 
-  virtual frequency get_uncore_frequency() = 0;
+  virtual frequency get_uncore_frequency(bool cached = true) = 0;
 
   virtual void set_core_frequency(frequency target) = 0;
 
@@ -52,9 +52,9 @@ public:
 
   inline virtual std::vector<frequency> supported_uncore_frequencies() { return library.get_supported_uncore_frequencies(handle); }
 
-  inline virtual frequency get_core_frequency() { return current_core_frequency; }
+  inline virtual frequency get_core_frequency(bool cached = true) { return cached ? current_core_frequency : library.get_core_frequency(handle); }
 
-  inline virtual frequency get_uncore_frequency() { return current_uncore_frequency; }
+  inline virtual frequency get_uncore_frequency(bool cached = true) { return cached ? current_uncore_frequency : library.get_uncore_frequency(handle); }
 
   inline virtual void set_core_frequency(frequency target) {
     library.set_core_frequency(handle, target);

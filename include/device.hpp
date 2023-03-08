@@ -16,9 +16,9 @@ public:
 
   inline std::vector<frequency> supported_uncore_frequencies() { return impl->supported_uncore_frequencies(); }
 
-  inline frequency get_core_frequency() { return impl->get_core_frequency(); }
+  inline frequency get_core_frequency(bool cached = true) { return impl->get_core_frequency(cached); }
 
-  inline frequency get_uncore_frequency() { return impl->get_uncore_frequency(); }
+  inline frequency get_uncore_frequency(bool cached = true) { return impl->get_uncore_frequency(cached); }
 
   inline void set_core_frequency(frequency target) { impl->set_core_frequency(target); }
 
