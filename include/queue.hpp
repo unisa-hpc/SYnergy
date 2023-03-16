@@ -18,12 +18,16 @@ public:
   template <typename... Args>
   queue(Args&&... args)
       : sycl::queue(synergy::queue::check_args(std::forward<Args>(args)...)),
-        device{synergy::detail::runtime::synergy_device_from(get_device())} {}
+        device{synergy::detail::runtime::synergy_device_from(get_device())} {
+    check_profiling();
+  }
 
   template <typename... Args>
   queue(frequency uncore_frequency, frequency core_frequency, Args&&... args)
       : sycl::queue(synergy::queue::check_args(std::forward<Args>(args)...)),
         device{synergy::detail::runtime::synergy_device_from(get_device())} {
+    check_profiling();
+
     core_target_frequency = core_frequency;
     uncore_target_frequency = uncore_frequency;
   }
@@ -102,11 +106,27 @@ private:
 
   template <typename... Args>
   static sycl::queue check_args(Args&&... args) {
-    if constexpr ((std::is_same_v<sycl::property::queue::enable_profiling, Args> ||
-                   ...))
+
+    // check if it has some standard property
+    if constexpr (
+        (std::is_same_v<sycl::property::queue::enable_profiling&, Args> || ...) ||
+        (std::is_same_v<sycl::property::queue::enable_profiling, Args> || ...) ||
+        (std::is_same_v<sycl::property::queue::in_order&, Args> || ...) ||
+        (std::is_same_v<sycl::property::queue::in_order, Args> || ...) ||
+        (std::is_same_v<sycl::property_list&, Args> || ...) ||
+        (std::is_same_v<sycl::property_list, Args> || ...)
+    )
       return sycl::queue(std::forward<Args>(args)...);
-    else
+    else {
       return sycl::queue(std::forward<Args>(args)..., sycl::property::queue::enable_profiling{});
+    }
+  }
+
+  inline void check_profiling() {
+#ifdef SYNERGY_ENABLE_PROFILING
+    if (!has_property<sycl::property::queue::enable_profiling>())
+      throw std::runtime_error("synergy::queue error: queue must be constructed with the enable_profiling property");
+#endif
   }
 };
 
