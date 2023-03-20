@@ -45,7 +45,11 @@ option(SYNERGY_DEVICE_PROFILING "Enable device energy consumption profiling" OFF
 option(SYNERGY_KERNEL_PROFILING "Enable kernel energy consumption profiling" OFF)
 
 if(SYNERGY_DEVICE_PROFILING)
+	option(SYNERGY_HOST_PROFILING "Enable host energy consumption profiling" OFF)
 	target_compile_definitions(synergy INTERFACE SYNERGY_DEVICE_PROFILING)
+	if (SYNERGY_HOST_PROFILING)
+		target_compile_definitions(synergy INTERFACE SYNERGY_HOST_PROFILING)
+	endif()
 endif()
 
 if(SYNERGY_KERNEL_PROFILING)

@@ -145,6 +145,11 @@ public:
   inline double device_energy_consumption() const {
     return profiling->device_energy();
   }
+#ifdef SYNERGY_HOST_PROFILING
+  inline double host_energy_consumption() const {
+    return profiling->host_energy();
+  }
+#endif
 #endif
 
 private:
