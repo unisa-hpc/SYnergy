@@ -69,7 +69,8 @@ public:
       event = sycl::queue::submit(
           [&](sycl::handler& h) {
             try {
-              device.set_all_frequencies(core_target_frequency, uncore_target_frequency);
+              if (core_target_frequency) device.set_core_frequency(core_target_frequency);
+              if (uncore_target_frequency) device.set_uncore_frequency(uncore_target_frequency);
             } catch (const std::exception& e) {
               std::cerr << e.what() << '\n';
             }
@@ -101,7 +102,8 @@ public:
     sycl::event event = sycl::queue::submit(
         [&](sycl::handler& h) {
           try {
-            device.set_all_frequencies(kernel_core_frequency, kernel_uncore_frequency);
+            if (kernel_core_frequency) device.set_core_frequency(kernel_core_frequency);
+            if (kernel_uncore_frequency) device.set_uncore_frequency(kernel_uncore_frequency);
           } catch (const std::exception& e) {
             std::cerr << e.what() << '\n';
           }
@@ -161,7 +163,7 @@ private:
   std::shared_ptr<detail::profiling_manager> profiling;
 #endif
 
-  inline bool has_target() { return core_target_frequency != 0 && uncore_target_frequency != 0; }
+  inline bool has_target() { return core_target_frequency != 0 || uncore_target_frequency != 0; }
 
   template <typename... Args>
   static sycl::queue check_args(Args&&... args) {
