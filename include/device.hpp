@@ -30,10 +30,6 @@ public:
 
   inline unsigned get_power_sampling_rate() { return impl->get_power_sampling_rate(); }
 
-  inline double get_energy_consumption() { return impl->get_energy_consumption(); }
-
-  inline void increase_energy_consumption(double energy_increase) { impl->increase_energy_consumption(energy_increase); }
-
 private:
   std::shared_ptr<detail::device_impl> impl;
 };

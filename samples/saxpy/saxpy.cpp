@@ -3,7 +3,6 @@
 using namespace sycl;
 
 int main() {
-
   std::vector<float> x(2048);
   std::vector<float> y(2048);
   std::vector<float> z(2048);
@@ -21,7 +20,7 @@ int main() {
     accessor<float, 1, access_mode::read_write> z_acc{z_buf, h};
     float a{alpha};
 
-    h.parallel_for(range<1>{2048}, [=](id<1> id) {
+    h.parallel_for(range<1>{2048}, [=](sycl::id<1> id) {
       z_acc[id] = a * x_acc[id] + y_acc[id];
     });
   });

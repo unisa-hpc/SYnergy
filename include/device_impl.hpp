@@ -26,12 +26,6 @@ public:
   virtual power get_power_usage() = 0;
 
   virtual unsigned get_power_sampling_rate() = 0;
-
-  inline double get_energy_consumption() { return energy; }
-  inline void increase_energy_consumption(double energy_increase) { energy += energy_increase; }
-
-private:
-  double energy = 0.0;
 };
 
 template <typename vendor>
