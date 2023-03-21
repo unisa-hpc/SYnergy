@@ -26,5 +26,9 @@ int main() {
   });
 
   e.wait_and_throw();
-  // double energy = q.kernel_energy_consumption(e);
+
+#ifdef SYNERGY_ENABLE_PROFILING
+  std::cout << "Kernel energy consumption: " << q.kernel_energy_consumption(e) << " j\n";
+  std::cout << "Device energy consumption: " << q.device_energy_consumption() << " j\n";
+#endif
 }

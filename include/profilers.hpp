@@ -34,15 +34,36 @@ public:
 
           energy_sample = device.get_power_usage() / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
           // std::cout << "power: " << device.get_power_usage() << ", energy: " << energy_sample << "\n";
-
           kernel.energy += energy_sample;
-          manager.device_energy_consumption += energy_sample;
 
           std::this_thread::sleep_for(std::chrono::milliseconds(sampling_rate));
         }
 
         current_kernel++;
       }
+    }
+  }
+
+private:
+  Manager& manager;
+};
+
+template <typename Manager>
+class coarse_grained_profiler {
+public:
+  coarse_grained_profiler(Manager& manager)
+      : manager{manager} {}
+
+  void operator()() {
+    synergy::device& device = manager.device;
+    auto sampling_rate = device.get_power_sampling_rate();
+
+    double energy_sample = 0.0;
+    while (!manager.finished) {
+      energy_sample = device.get_power_usage() / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
+      manager.device_energy_consumption += energy_sample;
+
+      std::this_thread::sleep_for(std::chrono::milliseconds(sampling_rate));
     }
   }
 

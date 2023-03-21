@@ -47,10 +47,10 @@ int main() {
   e.wait_and_throw();
 
 #ifdef SYNERGY_ENABLE_PROFILING
-  std::cout << "Energy consumption: " << q.kernel_energy_consumption(e) << " j\n";
+  std::cout << "Kernel energy consumption: " << q.kernel_energy_consumption(e) << " j\n";
+  std::cout << "Device energy consumption: " << q.device_energy_consumption() << " j\n";
 #endif
 
-  // Check
   host_accessor<value_type, 2> h_acc{c_buf};
   for (int i = 0; i < n; i++)
     for (int j = 0; j < n; j++)

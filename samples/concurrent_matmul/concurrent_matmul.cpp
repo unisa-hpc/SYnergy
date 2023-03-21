@@ -89,12 +89,9 @@ int multi_queue(synergy::queue& q, const std::vector<int>& a, const std::vector<
 #endif
 
   return ((end - start).count());
-
-} // end multi_queue
+}
 
 int main() {
-  //   sycl::property_list q_prop{sycl::property::queue::in_order()};
-  //   std::cout << "In order queue: Jitting+Execution time\n";
   std::vector<int> a;
   std::vector<int> b;
   a.resize(N);
@@ -103,13 +100,14 @@ int main() {
   std::fill(b.begin(), b.end(), 1);
 
   sycl::property_list p{sycl::property::queue::in_order(), sycl::property::queue::enable_profiling()};
-  synergy::queue q1(sycl::gpu_selector_v, p);
-  synergy::queue q2(sycl::gpu_selector_v, sycl::property::queue::enable_profiling());
+  synergy::queue q1(sycl::gpu_selector_v);
+  synergy::queue q2(sycl::gpu_selector_v);
+
+#ifdef SYNERGY_ENABLE_PROFILING
+  std::cout << "Device (q1) Energy consumption: " << q1.device_energy_consumption() << " j\n";
+  std::cout << "Device (q2) Energy consumption: " << q2.device_energy_consumption() << " j\n";
+#endif
 
   multi_queue(q1, a, b);
   multi_queue(q2, a, b);
-
-  //   usleep(500 * 1000);
-  //   std::cout << "In order queue: Execution time\n";
-  //   multi_queue(q1, a, b);
 }

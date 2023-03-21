@@ -14,19 +14,20 @@ namespace detail {
 class profiling_manager {
 public:
   friend class fine_grained_profiler<profiling_manager>;
+  friend class coarse_grained_profiler<profiling_manager>;
 
-  profiling_manager(device& device) : device{device} {}
+  profiling_manager(device& device) : device{device} {
+    kernels_profiler = std::thread{fine_grained_profiler<profiling_manager>{*this}};
+    device_profiler = std::thread{coarse_grained_profiler<profiling_manager>{*this}};
+  }
 
   ~profiling_manager() {
     finished = true;
     kernels_profiler.join();
+    device_profiler.join();
   }
 
   void profile_kernel(sycl::event event) {
-    if (!kernels_profiler.joinable()) {
-      kernels_profiler = std::thread{fine_grained_profiler<profiling_manager>{*this}};
-    }
-
     kernels.push_back(kernel{event});
   }
 
@@ -47,9 +48,11 @@ public:
 private:
   device device;
   double device_energy_consumption = 0.0;
-  std::thread kernels_profiler;
   std::vector<kernel> kernels;
   bool finished = false;
+
+  std::thread kernels_profiler;
+  std::thread device_profiler;
 };
 
 } // namespace detail
