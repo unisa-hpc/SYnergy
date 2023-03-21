@@ -33,12 +33,12 @@ int main(int argc, char **argv) {
   sycl::buffer<int, 1> buf1{a.data(), N};
   sycl::buffer<int, 1> buf2{b.data(), N};
 
-  // q1.submit([&](sycl::handler &h) {
-  //   sycl::accessor acc {buf1, h, sycl::read_write};
-  //   h.parallel_for(sycl::range<1>{N}, [=](auto id) {
-  //     acc[id] *= acc[id] * VAL;
-  //   });
-  // }).wait();
+  q1.submit([&](sycl::handler &h) {
+    sycl::accessor acc {buf1, h, sycl::read_write};
+    h.parallel_for(sycl::range<1>{N}, [=](auto id) {
+      acc[id] *= acc[id] * VAL;
+    });
+  }).wait();
 
   q2.submit(mem_freq, core_freq, [&](sycl::handler &h) {
     sycl::accessor acc {buf2, h, sycl::read_write};
