@@ -35,6 +35,7 @@ int multi_queue(synergy::queue& q, const std::vector<int>& a, const std::vector<
           }
       });
     });
+
     event e2 = q.submit([&](sycl::handler& h) {
       sycl::accessor a_acc(a_buf, h, sycl::read_only);
       sycl::accessor b_acc(b_buf, h, sycl::read_only);
@@ -74,7 +75,7 @@ int multi_queue(synergy::queue& q, const std::vector<int>& a, const std::vector<
 
   auto end = std::chrono::steady_clock::now();
   std::cout << "multi_queue completed on device - took "
-            << (end - start).count() / 1e6 << " u-secs\n";
+            << (end - start).count() / 1e6 << " u-secs" << std::endl;
 
 #ifdef SYNERGY_ENABLE_PROFILING
   for (auto& e : events) {
@@ -99,15 +100,14 @@ int main() {
   std::fill(a.begin(), a.end(), 1);
   std::fill(b.begin(), b.end(), 1);
 
-  sycl::property_list p{sycl::property::queue::in_order(), sycl::property::queue::enable_profiling()};
   synergy::queue q1(sycl::gpu_selector_v);
   synergy::queue q2(sycl::gpu_selector_v);
+
+  multi_queue(q1, a, b);
+  multi_queue(q2, a, b);
 
 #ifdef SYNERGY_ENABLE_PROFILING
   std::cout << "Device (q1) Energy consumption: " << q1.device_energy_consumption() << " j\n";
   std::cout << "Device (q2) Energy consumption: " << q2.device_energy_consumption() << " j\n";
 #endif
-
-  multi_queue(q1, a, b);
-  multi_queue(q2, a, b);
 }

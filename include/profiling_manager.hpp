@@ -1,5 +1,6 @@
 #pragma once
 
+#include <future>
 #include <thread>
 #include <vector>
 
@@ -17,18 +18,17 @@ public:
   friend class coarse_grained_profiler<profiling_manager>;
 
   profiling_manager(device& device) : device{device} {
-    kernels_profiler = std::thread{fine_grained_profiler<profiling_manager>{*this}};
     device_profiler = std::thread{coarse_grained_profiler<profiling_manager>{*this}};
   }
 
   ~profiling_manager() {
     finished = true;
-    kernels_profiler.join();
     device_profiler.join();
   }
 
   void profile_kernel(sycl::event event) {
     kernels.push_back(kernel{event});
+    auto future = std::async(std::launch::async, fine_grained_profiler<profiling_manager>{*this, kernels.back()});
   }
 
   double kernel_energy(const sycl::event& event) const {
@@ -51,7 +51,6 @@ private:
   std::vector<kernel> kernels;
   bool finished = false;
 
-  std::thread kernels_profiler;
   std::thread device_profiler;
 };
 

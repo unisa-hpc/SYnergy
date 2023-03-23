@@ -13,7 +13,6 @@ namespace synergy {
 class queue : public sycl::queue {
 public:
 #ifdef SYNERGY_ENABLE_PROFILING
-
   template <typename... Rest>
   queue(Rest&&... args)
       : sycl::queue(synergy::queue::check_args(std::forward<Rest>(args)...)),
@@ -45,6 +44,12 @@ public:
         uncore_target_frequency{uncore_frequency} {}
 #endif
 
+#ifdef SYNERGY_ENABLE_PROFILING
+  ~queue() {
+    sycl::queue::wait();
+  }
+#endif
+
   // esplicitly declared to avoid clashes with the variadic constructor
   queue(queue&) = default;
   queue(const queue&) = default;
@@ -73,7 +78,6 @@ public:
 
 #ifdef SYNERGY_ENABLE_PROFILING
     profiling->profile_kernel(event);
-    sycl::queue::wait();
 #endif
 
     return event;
@@ -102,7 +106,6 @@ public:
 
 #ifdef SYNERGY_ENABLE_PROFILING
     profiling->profile_kernel(event);
-    sycl::queue::wait();
 #endif
 
     return event;
