@@ -87,7 +87,7 @@ public:
   sycl::event submit(frequency uncore_frequency, frequency core_frequency, T cfg, Rest&&... rest) {
     sycl::event event;
 
-    if (core_target_frequency != 0 && uncore_target_frequency != 0) {
+    if (uncore_frequency != 0 && core_frequency != 0) {
       sycl::event scaling_event = sycl::queue::submit(detail::device_scaling{device, core_target_frequency, uncore_target_frequency});
 
       event = sycl::queue::submit(
