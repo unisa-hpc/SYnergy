@@ -58,23 +58,31 @@ public:
   queue& operator=(queue&) = default;
   queue& operator=(queue&&) = default;
 
-  template <typename T, typename... Rest>
-  sycl::event submit(T cfg, Rest&&... rest) {
+  template <typename T>
+  sycl::event submit(T cfg, frequency kernel_uncore_frequency = 0, frequency kernel_core_frequency = 0) {
     sycl::event event;
 
-    if (has_target()) {
-      sycl::event scaling_event = sycl::queue::submit(detail::device_scaling{device, core_target_frequency, uncore_target_frequency});
+    if ((core_target_frequency != 0 && uncore_target_frequency != 0) || has_target()) { // ugly
+      frequency core_freq, uncore_freq;
+
+      if (core_target_frequency != 0 && uncore_target_frequency != 0) {
+        core_freq = kernel_core_frequency;
+        uncore_freq = kernel_uncore_frequency;
+      } else {
+        core_freq = core_target_frequency;
+        uncore_freq = uncore_target_frequency;
+      }
+
+      sycl::event scaling_event = sycl::queue::submit(detail::device_scaling{device, core_freq, uncore_freq});
 
       event = sycl::queue::submit(
           [&](sycl::handler& h) {
             h.depends_on(scaling_event);
             cfg(h);
-          },
-          std::forward<Rest>(rest)...
+          }
       );
-    } else {
-      event = sycl::queue::submit(cfg, std::forward<Rest>(rest)...);
-    }
+    } else
+      event = sycl::queue::submit(cfg);
 
 #ifdef SYNERGY_ENABLE_PROFILING
     profiling->profile_kernel(event);
@@ -83,32 +91,10 @@ public:
     return event;
   }
 
-  template <typename T, typename... Rest>
-  sycl::event submit(frequency uncore_frequency, frequency core_frequency, T cfg, Rest&&... rest) {
-    sycl::event event;
-
-    if (core_target_frequency != 0 && uncore_target_frequency != 0) {
-      sycl::event scaling_event = sycl::queue::submit(detail::device_scaling{device, core_target_frequency, uncore_target_frequency});
-
-      event = sycl::queue::submit(
-          [&](sycl::handler& h) {
-            h.depends_on(scaling_event);
-            cfg(h);
-          },
-          std::forward<Rest>(rest)...
-      );
-
-    } else if (has_target()) {
-      return submit(cfg, std::forward<Rest>(rest)...);
-    } else {
-      event = sycl::queue::submit(cfg, std::forward<Rest>(rest)...);
-    }
-
-#ifdef SYNERGY_ENABLE_PROFILING
-    profiling->profile_kernel(event);
-#endif
-
-    return event;
+  template <typename T>
+  sycl::event submit(T cfg, const queue& secondary_queue) {
+    std::cerr << "synergy::queue info: submission with secondary queue does not support energy profiling or frequency scaling\n";
+    sycl::queue::submit(cfg, secondary_queue);
   }
 
   inline device get_synergy_device() const {

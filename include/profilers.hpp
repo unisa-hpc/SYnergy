@@ -51,7 +51,7 @@ public:
     auto sampling_rate = device.get_power_sampling_rate();
 
     double energy_sample = 0.0;
-    while (!manager.finished) {
+    while (!manager.finished.load(std::memory_order_acquire)) {
       energy_sample = device.get_power_usage() / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
       manager.device_energy_consumption += energy_sample;
 

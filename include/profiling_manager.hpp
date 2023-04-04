@@ -22,7 +22,7 @@ public:
   }
 
   ~profiling_manager() {
-    finished = true;
+    finished.store(true, std::memory_order_release);
     device_profiler.join();
   }
 
@@ -49,7 +49,7 @@ private:
   device device;
   double device_energy_consumption = 0.0;
   std::vector<kernel> kernels;
-  bool finished = false;
+  std::atomic<bool> finished = false;
 
   std::thread device_profiler;
 };
