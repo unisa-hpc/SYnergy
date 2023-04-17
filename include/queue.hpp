@@ -5,7 +5,6 @@
 #include "kernel.hpp"
 #include "profiling_manager.hpp"
 #include "runtime.hpp"
-#include "scaling.hpp"
 #include "types.hpp"
 
 namespace synergy {
@@ -59,25 +58,17 @@ public:
   queue& operator=(queue&&) = default;
 
   template <typename T>
-  sycl::event submit(T cfg, frequency kernel_uncore_frequency = 0, frequency kernel_core_frequency = 0) {
+  sycl::event submit(T cfg) {
     sycl::event event;
 
-    if ((core_target_frequency != 0 && uncore_target_frequency != 0) || has_target()) { // ugly
-      frequency core_freq, uncore_freq;
-
-      if (core_target_frequency != 0 && uncore_target_frequency != 0) {
-        core_freq = kernel_core_frequency;
-        uncore_freq = kernel_uncore_frequency;
-      } else {
-        core_freq = core_target_frequency;
-        uncore_freq = uncore_target_frequency;
-      }
-
-      sycl::event scaling_event = sycl::queue::submit(detail::device_scaling{device, core_freq, uncore_freq});
-
+    if (has_target()) {
       event = sycl::queue::submit(
           [&](sycl::handler& h) {
-            h.depends_on(scaling_event);
+            try {
+              device.set_all_frequencies(core_target_frequency, uncore_target_frequency);
+            } catch (const std::exception& e) {
+              std::cerr << e.what() << '\n';
+            }
             cfg(h);
           }
       );
@@ -88,6 +79,28 @@ public:
     profiling->profile_kernel(event);
 #endif
 
+    event.wait_and_throw();
+    return event;
+  }
+
+  template <typename T>
+  sycl::event submit(frequency kernel_uncore_frequency, frequency kernel_core_frequency, T cfg) {
+    sycl::event event = sycl::queue::submit(
+        [&](sycl::handler& h) {
+          try {
+            device.set_all_frequencies(kernel_core_frequency, kernel_uncore_frequency);
+          } catch (const std::exception& e) {
+            std::cerr << e.what() << '\n';
+          }
+          cfg(h);
+        }
+    );
+
+#ifdef SYNERGY_ENABLE_PROFILING
+    profiling->profile_kernel(event);
+#endif
+
+    event.wait_and_throw();
     return event;
   }
 
