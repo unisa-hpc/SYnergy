@@ -7,18 +7,20 @@ Currently supported target architectures:
 
 ## Build
 ### Dependencies
+- cmake (3.17 or newer)  
+- C++17 or newer compiler
 - A supported SYCL implementation:
 	- hipSYCL
 	- DPC++
-- Cmake (3.13 or newer)  
-- NVML (Nvidia support)
-- A C++17 or newer compiler
+- A supported target architecture
+	- CUDA with NVML
+	- ROCm with ROCm SMI
 
-To build SYnergy, type:
+To build SYnergy samples, type:
 ```bash
 	cd SYnergy
 	mkdir build && cd build/
-	cmake .. -DSYNERGY_SYCL_BACKEND=[hipSYCL | dpcpp] -DSYNERGY_CUDA_SUPPORT=[ON | OFF]
+	cmake .. -DSYNERGY_BUILD_SAMPLES=ON -DSYNERGY_SYCL_BACKEND=[hipSYCL | dpcpp] -DSYNERGY_CUDA_SUPPORT=[ON | OFF] -DSYNERGY_ROCM_SUPPORT=[ON | OFF]
 ```
 
 ## Usage
