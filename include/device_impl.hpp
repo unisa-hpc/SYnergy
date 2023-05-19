@@ -9,6 +9,8 @@ namespace detail {
 
 class device_impl {
 public:
+  virtual ~device_impl() = default;
+
   virtual std::vector<frequency> supported_core_frequencies() = 0;
 
   virtual std::vector<frequency> supported_uncore_frequencies() = 0;
@@ -40,7 +42,7 @@ public:
     current_uncore_frequency = library.get_uncore_frequency(handle);
   }
 
-  inline ~vendor_device() { library.shutdown(); }
+  inline virtual ~vendor_device() { library.shutdown(); }
 
   inline virtual std::vector<frequency> supported_core_frequencies() { return library.get_supported_core_frequencies(handle); }
 
