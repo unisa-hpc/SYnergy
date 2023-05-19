@@ -24,9 +24,9 @@ public:
   queue(frequency uncore_frequency, frequency core_frequency, Rest&&... args)
       : sycl::queue(synergy::queue::check_args(std::forward<Rest>(args)...)),
         device{synergy::detail::runtime::synergy_device_from(get_device())},
-        profiling{std::make_shared<detail::profiling_manager>(device)},
         core_target_frequency{core_frequency},
-        uncore_target_frequency{uncore_frequency} {
+        uncore_target_frequency{uncore_frequency},
+        profiling{std::make_shared<detail::profiling_manager>(device)} {
     assert_profiling_properties();
   }
 #else

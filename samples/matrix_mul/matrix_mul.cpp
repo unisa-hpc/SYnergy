@@ -38,7 +38,7 @@ int main() {
       int j = idx.get_global_id(1);
 
       c_acc[i][j] = 0.0f;
-      for (int k = 0; k < n; k++) {
+      for (size_t k = 0; k < n; k++) {
         c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
       }
     });
@@ -52,7 +52,7 @@ int main() {
 #endif
 
   host_accessor<value_type, 2> h_acc{c_buf};
-  for (int i = 0; i < n; i++)
-    for (int j = 0; j < n; j++)
+  for (size_t i = 0; i < n; i++)
+    for (size_t j = 0; j < n; j++)
       assert(h_acc[i][j] == n);
 }

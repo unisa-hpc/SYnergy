@@ -38,9 +38,11 @@ private:
     using namespace sycl;
 
     auto platforms = platform::get_platforms();
-    int count_hip = 0;
 
-    for (int i = 0; i < platforms.size(); i++) {
+#ifdef SYNERGY_ROCM_SUPPORT
+    int count_hip = 0;
+#endif
+    for (size_t i = 0; i < platforms.size(); i++) {
 
       std::string platform_name = platforms[i].get_info<info::platform::name>();
       std::transform(platform_name.begin(), platform_name.end(), platform_name.begin(), ::tolower);
@@ -53,7 +55,7 @@ private:
       if (platform_name.find("cuda") != std::string::npos) {
         auto devs = platforms[i].get_devices(info::device_type::gpu);
 
-        for (int j = 0; j < devs.size(); j++) {
+        for (size_t j = 0; j < devs.size(); j++) {
           auto ptr = std::make_shared<vendor_device<management::nvml>>(j);
           devices.insert({devs[j], synergy::device{ptr}});
         }
@@ -64,7 +66,7 @@ private:
       if (platform_name.find("hip") != std::string::npos) {
         auto devs = platforms[i].get_devices(info::device_type::gpu);
 
-        for (int j = 0; j < devs.size(); j++) {
+        for (size_t j = 0; j < devs.size(); j++) {
           auto ptr = std::make_shared<vendor_device<management::rsmi>>(count_hip); // passing count_hip is not an error: compile with SYNERGY_PROOF
           count_hip++;                                                             // there is one platform for each AMD HIP GPU
           devices.insert({devs[j], synergy::device{ptr}});

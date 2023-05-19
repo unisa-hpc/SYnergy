@@ -29,6 +29,8 @@ public:
   void profile_kernel(sycl::event event) {
     kernels.push_back(kernel{event});
     auto future = std::async(std::launch::async, fine_grained_profiler<profiling_manager>{*this, kernels.back()});
+    // this will automatically serialize all profiled kernels
+    // since the std::future destructor will wait until the async thread ends
   }
 
   double kernel_energy(const sycl::event& event) const {
