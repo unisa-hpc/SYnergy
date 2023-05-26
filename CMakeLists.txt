@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(SYNERGY_CUDA_SUPPORT "Enable CUDA support" OFF)
 option(SYNERGY_ROCM_SUPPORT "Enable ROCm support" OFF)
+option(SYNERGY_LZ_SUPPORT "Enable Level Zero Support" OFF)
 
 set(SYNERGY_SYCL_BACKEND "" CACHE STRING "Select SYCL backend [hipSYCL | dpcpp]")
 
@@ -81,6 +82,14 @@ if(SYNERGY_ROCM_SUPPORT)
 	target_compile_definitions(synergy INTERFACE SYNERGY_ROCM_SUPPORT)
 	target_link_libraries(synergy INTERFACE ${ROCM_SMI_LIBRARIES})
 	target_sources(synergy INTERFACE include/vendors/rsmi_wrapper.hpp)
+endif()
+
+if(SYNERGY_LZ_SUPPORT)
+	target_compile_definitions(synergy INTERFACE SYNERGY_LZ_SUPPORT)
+	target_sources(synergy INTERFACE include/vendors/lz_wrapper.hpp)
+	if (($ENV{ZES_ENABLE_SYSMAN} STREQUAL "") OR ($ENV{ZES_ENABLE_SYSMAN} STREQUAL ""))
+		message(WARNING "Remember to set the env variable ZES_ENABLE_SYSMAN=1 before executing")
+	endif()
 endif()
 
 # ##################### Samples ######################
