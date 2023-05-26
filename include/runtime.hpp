@@ -75,7 +75,8 @@ private:
 #endif
 
 #ifdef SYNERGY_LZ_SUPPORT
-      if (platform_name.find("level-zero") != std::string::npos) {
+      if (platform_name.find("level-zero") != std::string::npos ||
+          platform_name.find("level zero") != std::string::npos) {
         auto devs = platforms[i].get_devices(info::device_type::gpu);
         for (int j = 0; j < devs.size(); j++) {
           auto ptr = std::make_shared<vendor_device<management::lz>>(j);

@@ -2,6 +2,10 @@ link_libraries(synergy)
 
 option(SYNERGY_SAMPLES_ALL_WARNINGS "Enable all warnings during SYnergy samples compilation" OFF)
 
+if(SYNERGY_SYCL_IMPL STREQUAL "OpenSYCL" AND SYNERGY_LZ_SUPPORT)
+  message(STATUS "The supported OpenSYCL target for Level Zero is \"sscp\"")
+endif()
+
 add_executable(matrix_mul matrix_mul/matrix_mul.cpp)
 add_executable(query_freq query_freq/query_freq.cpp)
 add_executable(saxpy saxpy/saxpy.cpp)
@@ -10,7 +14,7 @@ add_executable(concurrent_matmul concurrent_matmul/concurrent_matmul.cpp)
 get_directory_property(all_targets BUILDSYSTEM_TARGETS)
 
 foreach(target IN LISTS all_targets)
-  if(SYNERGY_SYCL_BACKEND STREQUAL hipSYCL)
+  if(SYNERGY_SYCL_IMPL STREQUAL "OpenSYCL")
     add_sycl_to_target(TARGET ${target})
   endif()
 
@@ -23,7 +27,7 @@ foreach(target IN LISTS all_targets)
     )
   endif()
 
-  if(SYNERGY_SYCL_BACKEND STREQUAL "dpcpp") # CMAKE_CXX_COMPILER must be set to clang++
+  if(SYNERGY_SYCL_IMPL STREQUAL "DPC++") # CMAKE_CXX_COMPILER must be set to clang++
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
 
     if(SYNERGY_CUDA_SUPPORT)

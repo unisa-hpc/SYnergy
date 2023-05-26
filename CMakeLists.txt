@@ -10,10 +10,19 @@ option(SYNERGY_CUDA_SUPPORT "Enable CUDA support" OFF)
 option(SYNERGY_ROCM_SUPPORT "Enable ROCm support" OFF)
 option(SYNERGY_LZ_SUPPORT "Enable Level Zero Support" OFF)
 
-set(SYNERGY_SYCL_BACKEND "" CACHE STRING "Select SYCL backend [hipSYCL | dpcpp]")
+set(SYNERGY_SYCL_IMPL "" CACHE STRING "Select SYCL implementation [OpenSYCL | DPC++]")
+set_property(CACHE SYNERGY_SYCL_IMPL PROPERTY STRINGS "OpenSYCL" "DPC++")
 
-if(SYNERGY_SYCL_BACKEND STREQUAL hipSYCL)
-	find_package(hipSYCL REQUIRED)
+if(SYNERGY_SYCL_IMPL STREQUAL "OpenSYCL")
+	find_package(OpenSYCL)
+	
+	if(NOT OpenSYCL_FOUND)
+		find_package(hipSYCL)
+	endif()
+
+	if(NOT OpenSYCL_FOUND AND NOT hipSYCL_FOUND)
+		message(SEND_ERROR "OpenSYCL or hipSYCL package were not found. Specify OpenSYCL_DIR or hipSYCL_DIR.")
+	endif()
 endif()
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
