@@ -9,6 +9,8 @@
 #include <string>
 #include <ctime>
 
+#include <iostream>
+
 
 namespace synergy {
 namespace detail {
@@ -28,15 +30,8 @@ template<>
 class management_wrapper<management::lz> {
 
 public:
-  ~management_wrapper<management::lz>() {
-    if (drivers != nullptr) 
-      delete[] drivers;
-    if (devices != nullptr) 
-      delete[] devices;
-  }
-
   inline unsigned int get_devices_count() const {
-    return devices_count;
+    return devices.size();
   }
 
   inline void initialize() { //ho dovuto togliere const
@@ -50,7 +45,8 @@ public:
   using lz = management::lz;
 
   inline lz::device_handle get_device_handle(lz::device_identifier id) const {
-    return (lz::device_handle) devices[id];
+    auto ret = (lz::device_handle) devices[id];
+    return ret;
   }
 
   inline power get_power_usage(lz::device_handle handle) const {
@@ -65,7 +61,7 @@ public:
     zesPowerGetEnergyCounter(hPwr, &counter1);
 
     do {
-        zesPowerGetEnergyCounter(hPwr, &counter2);
+      zesPowerGetEnergyCounter(hPwr, &counter2);
     } while (counter2.timestamp - counter1.timestamp < SAMPLING_RATEO);
 
     float energy = counter2.energy - counter1.energy;
@@ -73,11 +69,11 @@ public:
     return (energy / timestamp) * 1000000; // watt to microwatt
   }
 
-  inline std::vector<frequency> get_supported_core_frequency(const lz::device_handle handle) const {
+  inline std::vector<frequency> get_supported_core_frequencies(const lz::device_handle handle) const {
     return get_supported_frequency<ZES_FREQ_DOMAIN_GPU>(handle);
   }
 
-  inline std::vector<frequency> get_supported_uncore_frequency(const lz::device_handle handle) const {
+  inline std::vector<frequency> get_supported_uncore_frequencies(const lz::device_handle handle) const {
     return get_supported_frequency<ZES_FREQ_DOMAIN_MEMORY>(handle);
   }
 
@@ -143,46 +139,46 @@ public:
       case ZE_RESULT_ERROR_UNSUPPORTED_VERSION:
         return "ZE_RESULT_ERROR_UNSUPPORTED_VERSION";
       default:
-        return "[Code error] " + return_value;
+        return "[Code error] " + std::to_string(return_value);
     }
   }
 
 private:
   error_checker<management::lz> check{*this};
-  ze_driver_handle_t* drivers = nullptr;
-  ze_device_handle_t* devices = nullptr;
-  unsigned int drivers_count = 0;
-  unsigned int devices_count = 0;
+  std::vector<ze_driver_handle_t> drivers;
+  std::vector<ze_device_handle_t> devices;
 
   inline void init_drivers() {
+    unsigned int drivers_count = 0;
     if (zeDriverGet(&drivers_count, nullptr) == management::lz::return_success && drivers_count) {
-      drivers = new ze_driver_handle_t[drivers_count];
-      zeDriverGet(&drivers_count, drivers);
+      drivers.resize(drivers_count);
+      zeDriverGet(&drivers_count, drivers.data());
     }
   }
 
   inline void init_devices() {
+    unsigned int devices_count = 0;
     unsigned int tmp = 0;
-    for (unsigned i = 0; i < drivers_count; i++) {
+    for (unsigned i = 0; i < drivers.size(); i++) {
       zeDeviceGet(drivers[i], &tmp, nullptr);
       devices_count += tmp;
     }
-
-    devices = new management::lz::device_handle[devices_count];
+  
+    devices.resize(devices_count);
     for (unsigned i = 0, offset = 0; i < devices_count; i++) {
-      zeDeviceGet(drivers[i], &tmp, &devices[offset + tmp]);
+      zeDeviceGet(drivers[i], &tmp, &devices.data()[offset]);
       offset += tmp;
     }
   }
 
   template<zes_freq_domain_t domain>
-  inline zes_freq_handle_t get_frequency_handle(const management::lz::device_handle handle) const {
+  zes_freq_handle_t get_frequency_handle(const management::lz::device_handle handle) const {
     zes_freq_handle_t ret = nullptr;
     unsigned handles_count = 0;
     check(zesDeviceEnumFrequencyDomains(handle, &handles_count, nullptr));
     if (handles_count) {
-      zes_freq_handle_t* handles = new zes_freq_handle_t[handles_count];
-      zesDeviceEnumFrequencyDomains(handle, &handles_count, handles);
+      std::vector<zes_freq_handle_t> handles (handles_count);
+      zesDeviceEnumFrequencyDomains(handle, &handles_count, handles.data());
       for (int i = 0; i < handles_count; i++) {
         zes_freq_properties_t props {};
         props.stype = ZES_STRUCTURE_TYPE_FREQ_PROPERTIES;
@@ -193,7 +189,6 @@ private:
           }
         }
       }
-      delete[] handles_arr;
     }
     return ret;
   }
@@ -204,18 +199,20 @@ private:
     zes_freq_handle_t h_freq = get_frequency_handle<domain>(handle);
     if (h_freq != nullptr) {
       unsigned count = 0;
-      double* freq_arr = new double[lz::max_frequencies];
-      check(zesFrequencyGetAvailableClocks(h_freq, &count, freq_arr));
-      for (int i = 0; i < count; i++) {
-        freqs.push_back(freq_arr[i]);
+      check(zesFrequencyGetAvailableClocks(h_freq, &count, nullptr));
+      if (count) {
+        std::vector<double> freq_arr (count);
+        check(zesFrequencyGetAvailableClocks(h_freq, &count, freq_arr.data()));
+        for (int i = 0; i < count; i++) {
+          freqs.push_back(static_cast<frequency>(freq_arr[i]));
+        }
       }
-      delete[] freq_arr;
     }
     return freqs;
   }
 
   template<zes_freq_domain_t domain>
-  frequency get_frequency(const lz::device_handle handle) const {
+  inline frequency get_frequency(const lz::device_handle handle) const {
     auto h_freq = get_frequency_handle<ZES_FREQ_DOMAIN_GPU>(handle);
     zes_freq_state_t state {};
     state.stype = ZES_STRUCTURE_TYPE_FREQ_STATE;
