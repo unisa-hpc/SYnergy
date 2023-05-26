@@ -5,14 +5,14 @@
 
 using namespace sycl;
 
-using value_type = double;
+using value_type = float;
 
 int main() {
   // Create a queue with a default device
   synergy::queue q(gpu_selector_v);
 
   // Create some buffers
-  constexpr size_t n = 4096;
+  constexpr size_t n = 2048;
   std::vector<value_type> a(n * n);
   std::vector<value_type> b(n * n);
   std::vector<value_type> c(n * n);
@@ -38,9 +38,10 @@ int main() {
       int j = idx.get_global_id(1);
 
       c_acc[i][j] = 0.0f;
-      for (size_t k = 0; k < n; k++) {
-        c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
-      }
+      for (int i = 0; i < 100; i++)
+        for (size_t k = 0; k < n; k++) {
+          c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
+        }
     });
   });
 

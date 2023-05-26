@@ -43,5 +43,15 @@ foreach(target IN LISTS all_targets)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=amd_gpu_${SYNERGY_SAMPLES_ROCM_ARCH}")
       endif()
     endif()
+
+    if(SYNERGY_LZ_SUPPORT)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=spir64_gen")
+
+      set(SYNERGY_SAMPLES_LZ_ARCH "" CACHE STRING "LevelZero device architecture e.g. acm-g10")
+      if(NOT SYNERGY_SAMPLES_ROCM_ARCH STREQUAL "")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend \"-device ${SYNERGY_SAMPLES_LZ_ARCH}\"")
+      endif()
+    endif()
+
   endif()
 endforeach()

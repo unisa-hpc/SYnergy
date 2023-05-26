@@ -55,9 +55,6 @@ endif()
 if(SYNERGY_LZ_SUPPORT)
 	target_compile_definitions(synergy INTERFACE SYNERGY_LZ_SUPPORT)
 	target_sources(synergy INTERFACE include/vendors/lz_wrapper.hpp)
-	if (($ENV{ZES_ENABLE_SYSMAN} STREQUAL "") OR ($ENV{ZES_ENABLE_SYSMAN} STREQUAL ""))
-		message(WARNING "Remember to set the env variable ZES_ENABLE_SYSMAN=1 before executing")
-	endif()
 endif()
 
 # ##################### Samples ######################
