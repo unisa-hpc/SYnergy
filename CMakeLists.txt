@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.17)
 project(SYnergy VERSION 0.1.1 LANGUAGES CXX)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -53,7 +55,10 @@ if(SYNERGY_ROCM_SUPPORT)
 endif()
 
 if(SYNERGY_LZ_SUPPORT)
+	find_package(LevelZero REQUIRED)
+
 	target_compile_definitions(synergy INTERFACE SYNERGY_LZ_SUPPORT)
+	target_link_libraries(synergy INTERFACE LevelZero::LevelZero)
 	target_sources(synergy INTERFACE include/vendors/lz_wrapper.hpp)
 endif()
 

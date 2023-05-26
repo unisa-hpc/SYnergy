@@ -29,7 +29,7 @@ foreach(target IN LISTS all_targets)
     if(SYNERGY_CUDA_SUPPORT)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=nvptx64-nvidia-cuda")
 
-      set(SYNERGY_SAMPLES_CUDA_ARCH "" CACHE STRING "CUDA architecture in format \"sm_**\" e.g. sm_70")
+      set(SYNERGY_SAMPLES_CUDA_ARCH "" CACHE STRING "CUDA device architecture e.g. sm_70")
 
       if(NOT SYNERGY_SAMPLES_CUDA_ARCH STREQUAL "")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend --cuda-gpu-arch=${SYNERGY_SAMPLES_CUDA_ARCH}")
@@ -37,7 +37,7 @@ foreach(target IN LISTS all_targets)
     endif()
 
     if(SYNERGY_ROCM_SUPPORT)
-      set(SYNERGY_SAMPLES_ROCM_ARCH "" CACHE STRING "ROCm architecture in format \"gfx***\" e.g. gfx908")
+      set(SYNERGY_SAMPLES_ROCM_ARCH "" CACHE STRING "ROCm device architecture e.g. gfx908")
 
       if(NOT SYNERGY_SAMPLES_ROCM_ARCH STREQUAL "")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=amd_gpu_${SYNERGY_SAMPLES_ROCM_ARCH}")
@@ -47,7 +47,7 @@ foreach(target IN LISTS all_targets)
     if(SYNERGY_LZ_SUPPORT)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=spir64_gen")
 
-      set(SYNERGY_SAMPLES_LZ_ARCH "" CACHE STRING "LevelZero device architecture e.g. acm-g10")
+      set(SYNERGY_SAMPLES_LZ_ARCH "" CACHE STRING "Level Zero device architecture e.g. acm-g10")
       if(NOT SYNERGY_SAMPLES_ROCM_ARCH STREQUAL "")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend \"-device ${SYNERGY_SAMPLES_LZ_ARCH}\"")
       endif()
