@@ -77,7 +77,7 @@ int multi_queue(synergy::queue& q, const std::vector<int>& a, const std::vector<
   std::cout << "multi_queue completed on device - took "
             << (end - start).count() / 1e6 << " u-secs" << std::endl;
 
-#ifdef SYNERGY_ENABLE_PROFILING
+#ifdef SYNERGY_KERNEL_PROFILING
   for (auto& e : events) {
     std::cout << std::endl;
 
@@ -106,7 +106,7 @@ int main() {
   multi_queue(q1, a, b);
   multi_queue(q2, a, b);
 
-#ifdef SYNERGY_ENABLE_PROFILING
+#ifdef SYNERGY_DEVICE_PROFILING
   std::cout << "Device (q1) Energy consumption: " << q1.device_energy_consumption() << " j\n";
   std::cout << "Device (q2) Energy consumption: " << q2.device_energy_consumption() << " j\n";
 #endif

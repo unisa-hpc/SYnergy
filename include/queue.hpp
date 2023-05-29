@@ -7,6 +7,10 @@
 #include "runtime.hpp"
 #include "types.hpp"
 
+#if defined(SYNERGY_DEVICE_PROFILING) || defined(SYNERGY_KERNEL_PROFILING)
+#define SYNERGY_ENABLE_PROFILING
+#endif
+
 namespace synergy {
 
 class queue : public sycl::queue {
@@ -75,11 +79,11 @@ public:
     } else
       event = sycl::queue::submit(cfg);
 
-#ifdef SYNERGY_ENABLE_PROFILING
+#ifdef SYNERGY_KERNEL_PROFILING
     profiling->profile_kernel(event);
+    event.wait_and_throw();
 #endif
 
-    event.wait_and_throw();
     return event;
   }
 
@@ -96,11 +100,11 @@ public:
         }
     );
 
-#ifdef SYNERGY_ENABLE_PROFILING
+#ifdef SYNERGY_KERNEL_PROFILING
     profiling->profile_kernel(event);
+    event.wait_and_throw();
 #endif
 
-    event.wait_and_throw();
     return event;
   }
 
@@ -119,11 +123,13 @@ public:
     uncore_target_frequency = uncore_frequency;
   }
 
-#ifdef SYNERGY_ENABLE_PROFILING
+#ifdef SYNERGY_KERNEL_PROFILING
   inline double kernel_energy_consumption(const sycl::event& event) const {
     return profiling->kernel_energy(event);
   }
+#endif
 
+#ifdef SYNERGY_DEVICE_PROFILING
   inline double device_energy_consumption() const {
     return profiling->device_energy();
   }
@@ -142,7 +148,7 @@ private:
 
   template <typename... Args>
   static sycl::queue check_args(Args&&... args) {
-#ifdef SYNERGY_ENABLE_PROFILING
+#ifdef SYNERGY_KERNEL_PROFILING
     // check if it has some standard property
     if constexpr (
         (std::is_same_v<sycl::property::queue::enable_profiling&, Args> || ...) ||
@@ -161,14 +167,14 @@ private:
 #endif
   }
 
-#ifdef SYNERGY_ENABLE_PROFILING
   inline void assert_profiling_properties() {
+#ifdef SYNERGY_KERNEL_PROFILING
     if (!has_property<sycl::property::queue::enable_profiling>())
       throw std::runtime_error("synergy::queue error: queue must be constructed with the enable_profiling property");
     if (!has_property<sycl::property::queue::in_order>())
       throw std::runtime_error("synergy::queue error: queue must be constructed with the in_order property");
-  }
 #endif
+  }
 };
 
 } // namespace synergy

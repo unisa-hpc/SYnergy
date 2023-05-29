@@ -47,8 +47,10 @@ int main() {
 
   q.wait();
 
-#ifdef SYNERGY_ENABLE_PROFILING
+#ifdef SYNERGY_KERNEL_PROFILING
   std::cout << "Kernel energy consumption: " << q.kernel_energy_consumption(e) << " j\n";
+#endif
+#ifdef SYNERGY_DEVICE_PROFILING
   std::cout << "Device energy consumption: " << q.device_energy_consumption() << " j\n";
 #endif
 

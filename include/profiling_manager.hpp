@@ -18,14 +18,19 @@ public:
   friend class coarse_grained_profiler<profiling_manager>;
 
   profiling_manager(device& device) : device{device} {
+#ifdef SYNERGY_DEVICE_PROFILING
     device_profiler = std::thread{coarse_grained_profiler<profiling_manager>{*this}};
+#endif
   }
 
   ~profiling_manager() {
     finished.store(true, std::memory_order_release);
+#ifdef SYNERGY_DEVICE_PROFILING
     device_profiler.join();
+#endif
   }
 
+#ifdef SYNERGY_KERNEL_PROFILING
   void profile_kernel(sycl::event event) {
     kernels.push_back(kernel{event});
     auto future = std::async(std::launch::async, fine_grained_profiler<profiling_manager>{*this, kernels.back()});
@@ -42,18 +47,25 @@ public:
 
     return it->energy;
   }
+#endif
 
+#ifdef SYNERGY_DEVICE_PROFILING
   double device_energy() const {
     return device_energy_consumption;
   }
+#endif
 
 private:
   device device;
   double device_energy_consumption = 0.0;
-  std::vector<kernel> kernels;
   std::atomic<bool> finished = false;
+#ifdef SYNERGY_KERNEL_PROFILING
+  std::vector<kernel> kernels;
+#endif
 
+#ifdef SYNERGY_DEVICE_PROFILING
   std::thread device_profiler;
+#endif
 };
 
 } // namespace detail
