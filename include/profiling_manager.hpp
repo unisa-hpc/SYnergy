@@ -14,12 +14,13 @@ namespace detail {
 
 class profiling_manager {
 public:
-  friend class fine_grained_profiler<profiling_manager>;
-  friend class coarse_grained_profiler<profiling_manager>;
+  friend class concurrent_kernel_profiler<profiling_manager>;
+  friend class sequential_kernel_profiler<profiling_manager>;
+  friend class device_profiler<profiling_manager>;
 
   profiling_manager(device& device) : device{device} {
 #ifdef SYNERGY_DEVICE_PROFILING
-    device_profiler = std::thread{coarse_grained_profiler<profiling_manager>{*this}};
+    device_profiler = std::thread{detail::device_profiler<profiling_manager>{*this}};
 #endif
   }
 
@@ -33,7 +34,7 @@ public:
 #ifdef SYNERGY_KERNEL_PROFILING
   void profile_kernel(sycl::event event) {
     kernels.push_back(kernel{event});
-    auto future = std::async(std::launch::async, fine_grained_profiler<profiling_manager>{*this, kernels.back()});
+    auto future = std::async(std::launch::async, sequential_kernel_profiler<profiling_manager>{*this, kernels.back()});
     // this will automatically serialize all profiled kernels
     // since the std::future destructor will wait until the async thread ends
   }
