@@ -30,6 +30,12 @@ public:
 
   inline unsigned get_power_sampling_rate() { return impl->get_power_sampling_rate(); }
 
+  inline void init_power_snapshot() { impl->init_power_snapshot(); }
+
+  inline void finalize_power_snapshot() { impl->finalize_power_snapshot(); }
+
+  inline power get_snapshot_avarage_power() { return impl->get_snapshot_avarage_power() }
+
 private:
   std::shared_ptr<detail::device_impl> impl;
 };

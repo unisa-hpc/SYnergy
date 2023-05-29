@@ -28,6 +28,12 @@ public:
   virtual power get_power_usage() = 0;
 
   virtual unsigned get_power_sampling_rate() = 0;
+
+  virtual void init_power_snapshot() = 0;
+
+  virtual void finalize_power_snapshot() = 0;
+
+  virtual power get_snapshot_avarage_power() = 0;
 };
 
 template <typename vendor>
@@ -78,11 +84,25 @@ public:
     return vendor::sampling_rate;
   }
 
+  inline virtual void init_power_snapshot() {
+    init_snap = library.get_power_snap();
+  }
+
+  inline virtual void finalize_power_snapshot() {
+    final_snap = library.get_power_snap();
+  }
+
+  inline power get_snapshot_avarage_power() {
+    return library.get_snapshot_avarage_power(init_snap, final_snap);
+  }
+
 private:
   management_wrapper<vendor> library;
   typename vendor::device_handle handle;
   frequency current_core_frequency;
   frequency current_uncore_frequency;
+  typename vendor::power_snap_type init_snap;
+  typename vencor::power_snap_type final_snap;
 };
 
 } // namespace detail
