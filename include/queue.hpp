@@ -76,13 +76,19 @@ public:
             cfg(h);
           }
       );
-    } else
+
+#ifdef SYNERGY_KERNEL_PROFILING
+      profiling->profile_kernel(event);
+#endif
+      event.wait_and_throw(); // we always have to do this because kernel submit time can be different from kernel execution time
+    } else {
       event = sycl::queue::submit(cfg);
 
 #ifdef SYNERGY_KERNEL_PROFILING
-    profiling->profile_kernel(event);
-    event.wait_and_throw();
+      profiling->profile_kernel(event);
+      event.wait_and_throw();
 #endif
+    }
 
     return event;
   }
@@ -102,9 +108,9 @@ public:
 
 #ifdef SYNERGY_KERNEL_PROFILING
     profiling->profile_kernel(event);
-    event.wait_and_throw();
 #endif
 
+    event.wait_and_throw(); // if we do frequency scaling we always wait
     return event;
   }
 
