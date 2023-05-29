@@ -34,7 +34,7 @@ public:
 
   inline void finalize_power_snapshot() { impl->finalize_power_snapshot(); }
 
-  inline power get_snapshot_avarage_power() { return impl->get_snapshot_avarage_power() }
+  inline power get_snapshot_avarage_power() { return impl->get_snapshot_avarage_power(); }
 
 private:
   std::shared_ptr<detail::device_impl> impl;

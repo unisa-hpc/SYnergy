@@ -112,11 +112,12 @@ public:
 
   inline void setup_scaling(lz::device_handle) const {}
 
-  inline static power get_avarage_power(lz::power_snap_type snap1, lz::power_snap_type snap2) const {
-    double tot_energy = snap2.energy - snap1.energy;
+  inline static power get_snapshot_avarage_power(lz::power_snap_type snap1, lz::power_snap_type snap2) {
+    double energy_counter = snap2.energy - snap1.energy;
     double delta = snap2.timestamp - snap1.timestamp;
 
-    return static_cast<power>(tot_energy / delta * 1000000);
+    auto val = energy_counter / delta;
+    return val * 1000000;
   }
 
   inline std::string error_string(lz::return_type return_value) const {

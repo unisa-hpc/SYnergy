@@ -85,11 +85,11 @@ public:
   }
 
   inline virtual void init_power_snapshot() {
-    init_snap = library.get_power_snap();
+    init_snap = library.get_power_snap(handle);
   }
 
   inline virtual void finalize_power_snapshot() {
-    final_snap = library.get_power_snap();
+    final_snap = library.get_power_snap(handle);
   }
 
   inline power get_snapshot_avarage_power() {
@@ -102,7 +102,7 @@ private:
   frequency current_core_frequency;
   frequency current_uncore_frequency;
   typename vendor::power_snap_type init_snap;
-  typename vencor::power_snap_type final_snap;
+  typename vendor::power_snap_type final_snap;
 };
 
 } // namespace detail
