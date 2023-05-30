@@ -30,11 +30,13 @@ public:
 
   inline unsigned get_power_sampling_rate() { return impl->get_power_sampling_rate(); }
 
-  inline void init_power_snapshot() { impl->init_power_snapshot(); }
+  inline synergy::snap_id init_power_snapshot() { return impl->init_power_snapshot(); }
 
-  inline void finalize_power_snapshot() { impl->finalize_power_snapshot(); }
+  inline void begin_power_snapshot(synergy::snap_id id) { impl->begin_power_snapshot(id); }
 
-  inline power get_snapshot_avarage_power() { return impl->get_snapshot_avarage_power(); }
+  inline void end_power_snapshot(synergy::snap_id id) { impl->end_power_snapshot(id); }
+
+  inline power get_snapshot_avarage_power(synergy::snap_id id) { return impl->get_snapshot_avarage_power(id); }
 
 private:
   std::shared_ptr<detail::device_impl> impl;
