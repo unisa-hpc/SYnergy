@@ -41,13 +41,19 @@ private:
 };
 
 template <typename Manager>
-class snapshot_profiler {
+class sequential_kernel_profiler {
 public:
-  snapshot_profiler(Manager& manager, kernel& kernel)
+  sequential_kernel_profiler(Manager& manager, kernel& kernel)
       : manager{manager}, kernel{kernel} {}
 
   void operator()() {
     synergy::device& device = manager.device;
+    auto sampling_rate = device.get_power_sampling_rate();
+
+    double energy_sample = 0.0;
+
+#ifdef SYNERGY_LZ_SUPPORT
+
     auto sampling_rate = device.get_power_sampling_rate();
 
     synergy::snap_id id = device.init_power_snapshot();
@@ -55,8 +61,19 @@ public:
       device.begin_power_snapshot(id);
       std::this_thread::sleep_for(std::chrono::milliseconds(sampling_rate));
       device.end_power_snapshot(id);
-      kernel.energy += device.get_snapshot_avarage_power(id) / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
+      energy_sample = device.get_snapshot_avarage_power(id) / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
+      kernel.energy += energy_sample;
     } while (kernel.event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete);
+
+#else
+    while (kernel.event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete) {
+
+      energy_sample = device.get_power_usage() / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
+      kernel.energy += energy_sample;
+
+      std::this_thread::sleep_for(std::chrono::milliseconds(sampling_rate));
+    }
+#endif
   }
 
 private:
