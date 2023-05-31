@@ -9,6 +9,9 @@
 namespace synergy {
 
 namespace detail {
+
+struct not_implemented {};
+
 namespace management {
 
 struct rsmi {
@@ -18,6 +21,7 @@ struct rsmi {
   using device_identifier = unsigned int;
   using device_handle = unsigned int;
   using return_type = rsmi_status_t;
+  using power_snap_type = not_implemented;
   static constexpr rsmi_status_t return_success = RSMI_STATUS_SUCCESS;
 };
 
@@ -48,6 +52,8 @@ public:
     check(rsmi_dev_power_ave_get(handle, 0, &power)); // microwatts
     return power;
   }
+
+  inline rsmi::power_snap_type get_power_snap(rsmi::device_handle handle) const { return not_implemented{}; }
 
   inline std::vector<frequency> get_supported_core_frequencies(rsmi::device_handle handle) const {
     rsmi_frequencies_t core;
@@ -121,6 +127,10 @@ public:
   inline void setup_profiling(rsmi::device_handle) const {}
 
   inline void setup_scaling(rsmi::device_handle) const {}
+
+  static power get_snapshot_avarage_power(rsmi::power_snap_type snap1, rsmi::power_snap_type snap2) { 
+    throw "Not implemented";
+  }
 
   inline std::string error_string(rsmi::return_type return_value) const {
     const char* error_string;
