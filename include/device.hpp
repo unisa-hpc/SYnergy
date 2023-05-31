@@ -36,7 +36,7 @@ public:
 
   inline void end_power_snapshot(synergy::snap_id id) { impl->end_power_snapshot(id); }
 
-  inline power get_snapshot_avarage_power(synergy::snap_id id) { return impl->get_snapshot_avarage_power(id); }
+  inline power get_snapshot_average_power(synergy::snap_id id) { return impl->get_snapshot_average_power(id); }
 
 private:
   std::shared_ptr<detail::device_impl> impl;
