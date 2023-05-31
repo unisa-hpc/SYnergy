@@ -28,15 +28,9 @@ public:
 
   inline power get_power_usage() { return impl->get_power_usage(); }
 
+  inline energy get_energy_usage() { return impl->get_energy_usage(); }
+
   inline unsigned get_power_sampling_rate() { return impl->get_power_sampling_rate(); }
-
-  inline synergy::snap_id init_power_snapshot() { return impl->init_power_snapshot(); }
-
-  inline void begin_power_snapshot(synergy::snap_id id) { impl->begin_power_snapshot(id); }
-
-  inline void end_power_snapshot(synergy::snap_id id) { impl->end_power_snapshot(id); }
-
-  inline power get_snapshot_average_power(synergy::snap_id id) { return impl->get_snapshot_average_power(id); }
 
 private:
   std::shared_ptr<detail::device_impl> impl;

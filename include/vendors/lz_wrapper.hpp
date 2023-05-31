@@ -20,7 +20,6 @@ namespace management {
     using device_identifier = unsigned int;
     using device_handle = zes_device_handle_t;
     using return_type = ze_result_t;
-    using power_snap_type = zes_power_energy_counter_t;
     static constexpr return_type return_success = ZE_RESULT_SUCCESS;
   };
 }; // namespace management
@@ -68,13 +67,13 @@ public:
     return (energy / timestamp) * 1000000; // watt to microwatt
   }
 
-  inline lz::power_snap_type get_power_snap(lz::device_handle handle) const {
+  inline energy get_energy_usage(lz::device_handle handle) const {
     zes_pwr_handle_t hPwr;
     check(zesDeviceGetCardPowerDomain(handle, &hPwr));
 
     zes_power_energy_counter_t counter;
     check(zesPowerGetEnergyCounter(hPwr, &counter));
-    return counter;
+    return counter.energy;
   }
 
   inline std::vector<frequency> get_supported_core_frequencies(const lz::device_handle handle) const {
@@ -111,14 +110,6 @@ public:
   inline void setup_profiling(lz::device_handle) const {}
 
   inline void setup_scaling(lz::device_handle) const {}
-
-  inline static power get_snapshot_average_power(lz::power_snap_type snap1, lz::power_snap_type snap2) {
-    double energy_counter = snap2.energy - snap1.energy;
-    double delta = snap2.timestamp - snap1.timestamp;
-
-    auto val = energy_counter / delta;
-    return val * 1000000;
-  }
 
   inline std::string error_string(lz::return_type return_value) const {
     switch (return_value) {

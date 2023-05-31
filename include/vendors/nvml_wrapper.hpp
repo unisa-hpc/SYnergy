@@ -13,8 +13,6 @@ namespace synergy {
 
 namespace detail {
 
-struct not_implemented {};
-
 namespace management {
 struct nvml {
   static constexpr std::string_view name = "NVML";
@@ -23,7 +21,6 @@ struct nvml {
   using device_identifier = unsigned int;
   using device_handle = nvmlDevice_t;
   using return_type = nvmlReturn_t;
-  using power_snap_type = not_implemented;
   static constexpr nvmlReturn_t return_success = NVML_SUCCESS;
 };
 
@@ -58,7 +55,9 @@ public:
     return power * 1000;                            // return microwatts
   }
 
-  inline nvml::power_snap_type get_power_snap(nvml::device_handle handle) const { throw "Not implemented"; }
+  inline energy get_energy_usage(nvml::device_handle handle) const {
+    throw "Not implemented yet";
+  }
 
   inline std::vector<frequency> get_supported_core_frequencies(nvml::device_handle handle) const {
     using namespace std;
@@ -139,10 +138,6 @@ public:
       if (auto_boost_enabled == NVML_FEATURE_ENABLED)
         check(nvmlDeviceSetAutoBoostedClocksEnabled(handle, NVML_FEATURE_DISABLED));
     }
-  }
-
-  static power get_snapshot_average_power(nvml::power_snap_type snap1, nvml::power_snap_type snap2) { 
-    throw "Not implemented";
   }
 
   inline std::string error_string(nvml::return_type return_value) const {

@@ -9,8 +9,6 @@
 
 namespace synergy {
 
-using snap_id = unsigned;
-
 namespace detail {
 
 class device_impl {
@@ -34,15 +32,9 @@ public:
 
   virtual power get_power_usage() = 0;
 
+  virtual energy get_energy_usage() = 0;
+
   virtual unsigned get_power_sampling_rate() = 0;
-
-  volatile virtual synergy::snap_id init_power_snapshot() = 0;
-
-  virtual void begin_power_snapshot(synergy::snap_id id) = 0;
-  
-  virtual void end_power_snapshot(synergy::snap_id id) = 0;
-
-  virtual power get_snapshot_average_power(unsigned id) = 0;
 };
 
 template <typename vendor>
@@ -89,51 +81,12 @@ public:
     return library.get_power_usage(handle);
   }
 
+  inline virtual energy get_energy_usage() {
+    return library.get_energy_usage(handle);
+  }
+
   inline virtual unsigned get_power_sampling_rate() {
     return vendor::sampling_rate;
-  }
-
-  volatile virtual snap_id init_power_snapshot() {
-    std::optional<typename vendor::power_snap_type> first;
-    std::optional<typename vendor::power_snap_type> second;
-    std::pair<std::optional<typename vendor::power_snap_type>, 
-      std::optional<typename vendor::power_snap_type>> pair {first, second};
-
-    snap_id id = snaps.size();
-    snaps.push_back(pair);
-    return id;
-  }
-
-  inline virtual void begin_power_snapshot(synergy::snap_id id) {
-    typename vendor::power_snap_type snap = library.get_power_snap(handle);
-
-    if (id < snaps.size()) {
-      snaps[id].first.emplace(snap); 
-    } else {
-      throw std::runtime_error("Element not found");
-    }
-  }
-
-  inline virtual void end_power_snapshot(synergy::snap_id id) {
-    typename vendor::power_snap_type snap = library.get_power_snap(handle);
-
-    if (id < snaps.size()) {
-      snaps[id].second.emplace(snap);
-    } else {
-      throw std::runtime_error("Element not found");
-    }
-  }
-
-  inline power get_snapshot_average_power(synergy::snap_id id) {
-    if (id < snaps.size()) {
-      auto first = snaps[id].first;
-      auto second = snaps[id].second;
-      
-      if (first.has_value() && second.has_value()) {
-        return library.get_snapshot_average_power(first.value(), second.value());
-      }
-    }
-    throw std::runtime_error{"Element not found"};
   }
 
 private:
@@ -141,7 +94,6 @@ private:
   typename vendor::device_handle handle;
   frequency current_core_frequency;
   frequency current_uncore_frequency;
-  std::vector<std::pair<std::optional<typename vendor::power_snap_type>, std::optional<typename vendor::power_snap_type>>> snaps;
 };
 
 } // namespace detail

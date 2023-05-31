@@ -52,14 +52,13 @@ public:
   
 #ifdef SYNERGY_LZ_SUPPORT
 
-    synergy::snap_id id = device.init_power_snapshot();
-    device.begin_power_snapshot(id);
+    auto start = device.get_energy_usage();
     while (kernel.event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete)
       ;
-    device.end_power_snapshot(id);
+    auto end = device.get_energy_usage();
     auto sampling_time = kernel.event.get_profiling_info<sycl::info::event_profiling::command_end>() 
                       - kernel.event.get_profiling_info<sycl::info::event_profiling::command_start>(); //nanoseconds
-    energy_sample = device.get_snapshot_average_power(id) / 1000000.0 * sampling_time / 1000000000;
+    energy_sample = (end - start) / 1000000.0;
     kernel.energy = energy_sample;
     
 #else
