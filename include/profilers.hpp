@@ -87,12 +87,9 @@ public:
 
   void operator()() {
     synergy::device& device = manager.device;
-    auto sampling_rate = device.get_power_sampling_rate();
-
-    double energy_sample = 0.0;
-
+   
 #ifdef SYNERGY_LZ_SUPPORT
-
+    // TODO: when the manager.device_energy_consumption data is accessed, this loop is still running
     auto e_start = device.get_energy_usage();
     auto t_start = std::chrono::steady_clock::now();
     while (!manager.finished.load(std::memory_order_acquire));
@@ -100,8 +97,12 @@ public:
     auto t_end = std::chrono::steady_clock::now();
     auto delta_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
 
-    manager.device_energy_consumption = (e_end - e_start) / delta_time / 1000000.0; 
+    manager.device_energy_consumption = (e_end - e_start) / delta_time / 1000.0; 
 #else
+
+    auto sampling_rate = device.get_power_sampling_rate();
+    double energy_sample = 0.0;
+
     while (!manager.finished.load(std::memory_order_acquire)) {
       energy_sample = device.get_power_usage() / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
       manager.device_energy_consumption += energy_sample;
