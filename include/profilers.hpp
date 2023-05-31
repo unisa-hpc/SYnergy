@@ -48,24 +48,23 @@ public:
 
   void operator()() {
     synergy::device& device = manager.device;
-    auto sampling_rate = device.get_power_sampling_rate();
-
     double energy_sample = 0.0;
-
+  
 #ifdef SYNERGY_LZ_SUPPORT
 
+    synergy::snap_id id = device.init_power_snapshot();
+    device.begin_power_snapshot(id);
+    while (kernel.event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete)
+      ;
+    device.end_power_snapshot(id);
+    auto sampling_time = kernel.event.get_profiling_info<sycl::info::event_profiling::command_end>() 
+                      - kernel.event.get_profiling_info<sycl::info::event_profiling::command_start>(); //nanoseconds
+    energy_sample = device.get_snapshot_average_power(id) / 1000000.0 * sampling_time / 1000000000;
+    kernel.energy = energy_sample;
+    
+#else
     auto sampling_rate = device.get_power_sampling_rate();
 
-    synergy::snap_id id = device.init_power_snapshot();
-    do {
-      device.begin_power_snapshot(id);
-      std::this_thread::sleep_for(std::chrono::milliseconds(sampling_rate));
-      device.end_power_snapshot(id);
-      energy_sample = device.get_snapshot_avarage_power(id) / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
-      kernel.energy += energy_sample;
-    } while (kernel.event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete);
-
-#else
     while (kernel.event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete) {
 
       energy_sample = device.get_power_usage() / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
@@ -100,7 +99,7 @@ public:
       device.begin_power_snapshot(id);
       std::this_thread::sleep_for(std::chrono::milliseconds(sampling_rate));
       device.end_power_snapshot(id);
-      energy_sample = device.get_snapshot_avarage_power(id) / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
+      energy_sample = device.get_snapshot_average_power(id) / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
       manager.device_energy_consumption += energy_sample;
 #else
       energy_sample = device.get_power_usage() / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval

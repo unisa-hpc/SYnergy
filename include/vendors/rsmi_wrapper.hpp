@@ -128,7 +128,7 @@ public:
 
   inline void setup_scaling(rsmi::device_handle) const {}
 
-  static power get_snapshot_avarage_power(rsmi::power_snap_type snap1, rsmi::power_snap_type snap2) { 
+  static power get_snapshot_average_power(rsmi::power_snap_type snap1, rsmi::power_snap_type snap2) { 
     throw "Not implemented";
   }
 

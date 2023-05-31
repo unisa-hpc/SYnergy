@@ -25,7 +25,7 @@ public:
   power get_power_usage(device_handle) const;
 
   void get_power_snap() const;
-  static void get_snapshot_avarage_power();
+  static void get_snapshot_average_power();
 
   // sorted in ascending order
   std::vector<frequency> get_supported_core_frequencies(device_handle);

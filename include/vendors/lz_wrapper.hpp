@@ -112,7 +112,7 @@ public:
 
   inline void setup_scaling(lz::device_handle) const {}
 
-  inline static power get_snapshot_avarage_power(lz::power_snap_type snap1, lz::power_snap_type snap2) {
+  inline static power get_snapshot_average_power(lz::power_snap_type snap1, lz::power_snap_type snap2) {
     double energy_counter = snap2.energy - snap1.energy;
     double delta = snap2.timestamp - snap1.timestamp;
 

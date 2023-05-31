@@ -42,7 +42,7 @@ public:
   
   virtual void end_power_snapshot(synergy::snap_id id) = 0;
 
-  virtual power get_snapshot_avarage_power(unsigned id) = 0;
+  virtual power get_snapshot_average_power(unsigned id) = 0;
 };
 
 template <typename vendor>
@@ -108,7 +108,7 @@ public:
     typename vendor::power_snap_type snap = library.get_power_snap(handle);
 
     if (id < snaps.size()) {
-      snaps[id].first.emplace(snap);
+      snaps[id].first.emplace(snap); 
     } else {
       throw std::runtime_error("Element not found");
     }
@@ -124,13 +124,13 @@ public:
     }
   }
 
-  inline power get_snapshot_avarage_power(synergy::snap_id id) {
+  inline power get_snapshot_average_power(synergy::snap_id id) {
     if (id < snaps.size()) {
       auto first = snaps[id].first;
       auto second = snaps[id].second;
       
       if (first.has_value() && second.has_value()) {
-        return library.get_snapshot_avarage_power(first.value(), second.value());
+        return library.get_snapshot_average_power(first.value(), second.value());
       }
     }
     throw std::runtime_error{"Element not found"};

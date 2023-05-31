@@ -141,7 +141,7 @@ public:
     }
   }
 
-  static power get_snapshot_avarage_power(nvml::power_snap_type snap1, nvml::power_snap_type snap2) { 
+  static power get_snapshot_average_power(nvml::power_snap_type snap1, nvml::power_snap_type snap2) { 
     throw "Not implemented";
   }
 
