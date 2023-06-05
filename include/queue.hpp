@@ -47,11 +47,11 @@ public:
         uncore_target_frequency{uncore_frequency} {}
 #endif
 
-#ifdef SYNERGY_ENABLE_PROFILING
-  ~queue() {
-    sycl::queue::wait();
-  }
-#endif
+  // #ifdef SYNERGY_ENABLE_PROFILING
+  //   ~queue() {
+  //     sycl::queue::wait();
+  //   }
+  // #endif
 
   // esplicitly declared to avoid clashes with the variadic constructor
   queue(queue&) = default;
@@ -85,6 +85,9 @@ public:
       event = sycl::queue::submit(cfg);
 
 #ifdef SYNERGY_KERNEL_PROFILING
+      // #ifdef __HIPSYCL__
+      //       get_context().hipSYCL_runtime()->dag().flush_sync();
+      // #endif
       profiling->profile_kernel(event);
       event.wait_and_throw();
 #endif
@@ -107,6 +110,9 @@ public:
     );
 
 #ifdef SYNERGY_KERNEL_PROFILING
+#ifdef __HIPSYCL__
+    get_context().hipSYCL_runtime()->dag().flush_sync();
+#endif
     profiling->profile_kernel(event);
 #endif
 
