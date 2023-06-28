@@ -61,6 +61,7 @@ if(SYNERGY_CUDA_SUPPORT)
 endif()
 
 if(SYNERGY_ROCM_SUPPORT)
+	list(APPEND CMAKE_PREFIX_PATH "/opt/rocm")
 	find_package(rocm_smi REQUIRED)
 
 	target_compile_definitions(synergy INTERFACE SYNERGY_ROCM_SUPPORT)

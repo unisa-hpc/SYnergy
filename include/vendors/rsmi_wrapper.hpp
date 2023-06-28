@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <string_view>
 
 #include <rocm_smi/rocm_smi.h>
@@ -54,7 +55,7 @@ public:
     check(rsmi_dev_gpu_clk_freq_get(handle, RSMI_CLK_TYPE_SYS, &core));
 
     std::vector<frequency> frequencies(core.num_supported);
-    for (int i = 0; i < core.num_supported; i++)
+    for (size_t i = 0; i < core.num_supported; i++)
       frequencies[i] = core.frequency[i];
 
     return frequencies;
@@ -65,7 +66,7 @@ public:
     check(rsmi_dev_gpu_clk_freq_get(handle, RSMI_CLK_TYPE_MEM, &uncore));
 
     std::vector<frequency> frequencies(uncore.num_supported);
-    for (int i = 0; i < uncore.num_supported; i++)
+    for (size_t i = 0; i < uncore.num_supported; i++)
       frequencies[i] = uncore.frequency[i];
 
     return frequencies;
@@ -87,7 +88,7 @@ public:
     rsmi_frequencies_t core;
     check(rsmi_dev_gpu_clk_freq_get(handle, RSMI_CLK_TYPE_SYS, &core));
 
-    size_t target_index = -1;
+    int target_index = -1;
     for (size_t i = 0; i < core.num_supported && target_index == -1; i++)
       if (core.frequency[i] == target)
         target_index = i;
@@ -102,7 +103,7 @@ public:
     rsmi_frequencies_t uncore;
     check(rsmi_dev_gpu_clk_freq_get(handle, RSMI_CLK_TYPE_MEM, &uncore));
 
-    size_t target_index = -1;
+    int target_index = -1;
     for (size_t i = 0; i < uncore.num_supported && target_index == -1; i++)
       if (uncore.frequency[i] == target)
         target_index = i;
