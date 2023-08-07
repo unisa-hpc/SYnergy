@@ -165,7 +165,7 @@ private:
     }
   
     devices.resize(devices_count);
-    for (unsigned i = 0, offset = 0; i < devices_count; i++) {
+    for (unsigned i = 0, offset = 0; i < drivers.size(); i++) {
       zeDeviceGet(drivers[i], &tmp, &devices.data()[offset]);
       offset += tmp;
     }
