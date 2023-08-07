@@ -38,14 +38,13 @@ int main() {
       int j = idx.get_global_id(1);
 
       c_acc[i][j] = 0.0f;
-      for (int i = 0; i < 100; i++)
-        for (size_t k = 0; k < n; k++) {
-          c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
-        }
+      for (size_t k = 0; k < n; k++) {
+        c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
+      }
     });
   });
 
-  q.wait();
+  q.wait_and_throw();
 
 #ifdef SYNERGY_ENABLE_PROFILING
   std::cout << "Kernel energy consumption: " << q.kernel_energy_consumption(e) << " j\n";
