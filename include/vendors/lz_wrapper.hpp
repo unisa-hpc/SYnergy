@@ -1,7 +1,7 @@
 #pragma once
 
-#include <ze_api.h>
-#include <zes_api.h>
+#include <level_zero/ze_api.h>
+#include <level_zero/zes_api.h>
 
 #include <array>
 
@@ -165,7 +165,7 @@ private:
     }
   
     devices.resize(devices_count);
-    for (unsigned i = 0, offset = 0; i < devices_count; i++) {
+    for (unsigned i = 0, offset = 0; i < drivers.size(); i++) {
       zeDeviceGet(drivers[i], &tmp, &devices.data()[offset]);
       offset += tmp;
     }
