@@ -89,7 +89,6 @@ public:
     auto e_start = device.get_energy_usage();
 
     while (!manager.finished.load(std::memory_order_acquire)) {
-      // TODO: test this
       auto e_end = device.get_energy_usage();
       manager.device_energy_consumption = (e_end - e_start) / 1000000.0; // microjoules to joules
     }
