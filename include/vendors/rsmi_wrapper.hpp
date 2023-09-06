@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -51,7 +52,7 @@ public:
   }
 
   inline energy get_energy_usage(rsmi::device_handle handle) const {
-    throw "Not implemented yet";
+    throw std::runtime_error{"synergy " + std::string(rsmi::name) + " wrapper error: get_energy_usage is not supported"};
   }
 
   inline std::vector<frequency> get_supported_core_frequencies(rsmi::device_handle handle) const {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <stdexcept>
 #include <string_view>
 
 #include <nvml.h>
@@ -56,7 +57,7 @@ public:
   }
 
   inline energy get_energy_usage(nvml::device_handle handle) const {
-    throw "Not implemented yet";
+    throw std::runtime_error{"synergy " + std::string(nvml::name) + " wrapper error: get_energy_usage is not supported"};
   }
 
   inline std::vector<frequency> get_supported_core_frequencies(nvml::device_handle handle) const {

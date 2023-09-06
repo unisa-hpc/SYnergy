@@ -54,11 +54,10 @@ public:
     auto start = device.get_energy_usage();
     while (kernel.event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete)
       ;
-    auto end = device.get_energy_usage();
-    auto sampling_time = kernel.event.get_profiling_info<sycl::info::event_profiling::command_end>() - kernel.event.get_profiling_info<sycl::info::event_profiling::command_start>(); // nanoseconds
-    energy_sample = (end - start) / 1000000.0;                                                                                                                                        // microjouls to jouls
-    kernel.energy = energy_sample;
 
+    auto end = device.get_energy_usage();
+    energy_sample = (end - start) / 1000000.0; // microjoules to joules
+    kernel.energy = energy_sample;
 #else
     auto sampling_rate = device.get_power_sampling_rate();
 
@@ -87,16 +86,13 @@ public:
     synergy::device& device = manager.device;
 
 #ifdef SYNERGY_LZ_SUPPORT
-    // TODO: when the manager.device_energy_consumption data is accessed, this loop is still running
     auto e_start = device.get_energy_usage();
-    auto t_start = std::chrono::steady_clock::now();
-    while (!manager.finished.load(std::memory_order_acquire))
-      ;
-    auto e_end = device.get_energy_usage();
-    auto t_end = std::chrono::steady_clock::now();
-    auto delta_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
 
-    manager.device_energy_consumption = (e_end - e_start) / delta_time / 1000.0;
+    while (!manager.finished.load(std::memory_order_acquire)) {
+      // TODO: test this
+      auto e_end = device.get_energy_usage();
+      manager.device_energy_consumption = (e_end - e_start) / 1000000.0; // microjoules to joules
+    }
 #else
     auto sampling_rate = device.get_power_sampling_rate();
     double energy_sample = 0.0;
