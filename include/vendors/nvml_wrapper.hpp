@@ -5,11 +5,14 @@
 
 #include <nvml.h>
 
+#include <exception>
+
 #include "../management_wrapper.hpp"
 
 namespace synergy {
 
 namespace detail {
+
 namespace management {
 struct nvml {
   static constexpr std::string_view name = "NVML";
@@ -50,6 +53,10 @@ public:
     unsigned int power;
     check(nvmlDeviceGetPowerUsage(handle, &power)); // milliwatts
     return power * 1000;                            // return microwatts
+  }
+
+  inline energy get_energy_usage(nvml::device_handle handle) const {
+    throw "Not implemented yet";
   }
 
   inline std::vector<frequency> get_supported_core_frequencies(nvml::device_handle handle) const {

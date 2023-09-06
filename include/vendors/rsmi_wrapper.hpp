@@ -50,6 +50,10 @@ public:
     return power;
   }
 
+  inline energy get_energy_usage(rsmi::device_handle handle) const {
+    throw "Not implemented yet";
+  }
+
   inline std::vector<frequency> get_supported_core_frequencies(rsmi::device_handle handle) const {
     rsmi_frequencies_t core;
     check(rsmi_dev_gpu_clk_freq_get(handle, RSMI_CLK_TYPE_SYS, &core));

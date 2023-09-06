@@ -23,6 +23,7 @@ public:
   device_handle get_device_handle(device_indentifier) const;
 
   power get_power_usage(device_handle) const;
+  energy get_energy_usage(device_handle) const;
 
   // sorted in ascending order
   std::vector<frequency> get_supported_core_frequencies(device_handle);

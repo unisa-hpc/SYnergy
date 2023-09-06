@@ -28,6 +28,8 @@ public:
 
   inline power get_power_usage() { return impl->get_power_usage(); }
 
+  inline energy get_energy_usage() { return impl->get_energy_usage(); }
+
   inline unsigned get_power_sampling_rate() { return impl->get_power_sampling_rate(); }
 
 private:

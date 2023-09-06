@@ -8,6 +8,7 @@ namespace synergy {
 namespace detail {
 
 class device_impl {
+
 public:
   virtual ~device_impl() = default;
 
@@ -26,6 +27,8 @@ public:
   virtual void set_all_frequencies(frequency core, frequency uncore) = 0;
 
   virtual power get_power_usage() = 0;
+
+  virtual energy get_energy_usage() = 0;
 
   virtual unsigned get_power_sampling_rate() = 0;
 };
@@ -72,6 +75,10 @@ public:
 
   inline virtual power get_power_usage() {
     return library.get_power_usage(handle);
+  }
+
+  inline virtual energy get_energy_usage() {
+    return library.get_energy_usage(handle);
   }
 
   inline virtual unsigned get_power_sampling_rate() {

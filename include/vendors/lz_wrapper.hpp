@@ -6,10 +6,8 @@
 #include <array>
 
 #include "../management_wrapper.hpp"
+#include <string_view>
 #include <string>
-#include <ctime>
-
-#include <iostream>
 
 
 namespace synergy {
@@ -67,6 +65,15 @@ public:
     float energy = counter2.energy - counter1.energy;
     float timestamp = counter2.timestamp - counter1.timestamp;
     return (energy / timestamp) * 1000000; // watt to microwatt
+  }
+
+  inline energy get_energy_usage(lz::device_handle handle) const {
+    zes_pwr_handle_t hPwr;
+    check(zesDeviceGetCardPowerDomain(handle, &hPwr));
+
+    zes_power_energy_counter_t counter;
+    check(zesPowerGetEnergyCounter(hPwr, &counter));
+    return counter.energy;
   }
 
   inline std::vector<frequency> get_supported_core_frequencies(const lz::device_handle handle) const {
