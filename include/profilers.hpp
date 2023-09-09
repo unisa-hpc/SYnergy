@@ -7,9 +7,9 @@ namespace synergy {
 namespace detail {
 
 template <typename Manager>
-class fine_grained_profiler {
+class concurrent_kernel_profiler {
 public:
-  fine_grained_profiler(Manager& manager, kernel& kernel)
+  concurrent_kernel_profiler(Manager& manager, kernel& kernel)
       : manager{manager}, kernel{kernel} {}
 
   void operator()() {
@@ -41,22 +41,68 @@ private:
 };
 
 template <typename Manager>
-class coarse_grained_profiler {
+class sequential_kernel_profiler {
 public:
-  coarse_grained_profiler(Manager& manager)
+  sequential_kernel_profiler(Manager& manager, kernel& kernel)
+      : manager{manager}, kernel{kernel} {}
+
+  void operator()() {
+    synergy::device& device = manager.device;
+    double energy_sample = 0.0;
+
+#ifdef SYNERGY_LZ_SUPPORT
+    auto start = device.get_energy_usage();
+    while (kernel.event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete)
+      ;
+
+    auto end = device.get_energy_usage();
+    energy_sample = (end - start) / 1000000.0; // microjoules to joules
+    kernel.energy = energy_sample;
+#else
+    auto sampling_rate = device.get_power_sampling_rate();
+
+    while (kernel.event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete) {
+
+      energy_sample = device.get_power_usage() / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
+      kernel.energy += energy_sample;
+
+      std::this_thread::sleep_for(std::chrono::milliseconds(sampling_rate));
+    }
+#endif
+  }
+
+private:
+  Manager& manager;
+  kernel& kernel;
+};
+
+template <typename Manager>
+class device_profiler {
+public:
+  device_profiler(Manager& manager)
       : manager{manager} {}
 
   void operator()() {
     synergy::device& device = manager.device;
-    auto sampling_rate = device.get_power_sampling_rate();
 
+#ifdef SYNERGY_LZ_SUPPORT
+    auto e_start = device.get_energy_usage();
+
+    while (!manager.finished.load(std::memory_order_acquire)) {
+      auto e_end = device.get_energy_usage();
+      manager.device_energy_consumption = (e_end - e_start) / 1000000.0; // microjoules to joules
+    }
+#else
+    auto sampling_rate = device.get_power_sampling_rate();
     double energy_sample = 0.0;
+
     while (!manager.finished.load(std::memory_order_acquire)) {
       energy_sample = device.get_power_usage() / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
       manager.device_energy_consumption += energy_sample;
 
       std::this_thread::sleep_for(std::chrono::milliseconds(sampling_rate));
     }
+#endif
   }
 
 private:

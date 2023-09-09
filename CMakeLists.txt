@@ -41,10 +41,15 @@ target_link_libraries(synergy INTERFACE Threads::Threads)
 
 target_include_directories(synergy INTERFACE include)
 
-option(SYNERGY_ENABLE_PROFILING "Enable energy consumption profiling" OFF)
+option(SYNERGY_DEVICE_PROFILING "Enable device energy consumption profiling" OFF)
+option(SYNERGY_KERNEL_PROFILING "Enable kernel energy consumption profiling" OFF)
 
-if(SYNERGY_ENABLE_PROFILING)
-	target_compile_definitions(synergy INTERFACE SYNERGY_ENABLE_PROFILING)
+if(SYNERGY_DEVICE_PROFILING)
+	target_compile_definitions(synergy INTERFACE SYNERGY_DEVICE_PROFILING)
+endif()
+
+if(SYNERGY_KERNEL_PROFILING)
+	target_compile_definitions(synergy INTERFACE SYNERGY_KERNEL_PROFILING)
 endif()
 
 if(SYNERGY_CUDA_SUPPORT)
@@ -56,6 +61,7 @@ if(SYNERGY_CUDA_SUPPORT)
 endif()
 
 if(SYNERGY_ROCM_SUPPORT)
+	list(APPEND CMAKE_PREFIX_PATH "/opt/rocm")
 	find_package(rocm_smi REQUIRED)
 
 	target_compile_definitions(synergy INTERFACE SYNERGY_ROCM_SUPPORT)

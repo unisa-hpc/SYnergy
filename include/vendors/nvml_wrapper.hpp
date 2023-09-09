@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <stdexcept>
 #include <string_view>
 
 #include <nvml.h>
@@ -10,6 +11,7 @@
 namespace synergy {
 
 namespace detail {
+
 namespace management {
 struct nvml {
   static constexpr std::string_view name = "NVML";
@@ -50,6 +52,10 @@ public:
     unsigned int power;
     check(nvmlDeviceGetPowerUsage(handle, &power)); // milliwatts
     return power * 1000;                            // return microwatts
+  }
+
+  inline energy get_energy_usage(nvml::device_handle handle) const {
+    throw std::runtime_error{"synergy " + std::string(nvml::name) + " wrapper error: get_energy_usage is not supported"};
   }
 
   inline std::vector<frequency> get_supported_core_frequencies(nvml::device_handle handle) const {
