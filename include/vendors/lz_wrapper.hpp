@@ -97,40 +97,94 @@ public:
 
   inline std::string error_string(lz::return_type return_value) const {
     switch (return_value) {
-    case ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE:
-      return "ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE";
-    case ZE_RESULT_ERROR_DEVICE_IN_LOW_POWER_STATE:
-      return "ZE_RESULT_ERROR_DEVICE_IN_LOW_POWER_STATE";
+    case ZE_RESULT_NOT_READY:
+      return "synchronization primitive not signaled";
     case ZE_RESULT_ERROR_DEVICE_LOST:
-      return "ZE_RESULT_ERROR_DEVICE_LOST";
-    case ZE_RESULT_ERROR_DEVICE_REQUIRES_RESET:
-      return "ZE_RESULT_ERROR_DEVICE_REQUIRES_RESET";
-    case ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE:
-      return "ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE";
-    case ZE_RESULT_ERROR_INSUFFICIENT_PERMISSIONS:
-      return "ZE_RESULT_ERROR_INSUFFICIENT_PERMISSIONS";
-    case ZE_RESULT_ERROR_NOT_AVAILABLE:
-      return "ZE_RESULT_ERROR_NOT_AVAILABLE";
-    case ZE_RESULT_ERROR_OUT_OF_DEVICE_MEMORY:
-      return "ZE_RESULT_ERROR_OUT_OF_DEVICE_MEMORY";
+      return "device hung, reset, was removed, or driver update occurred";
     case ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY:
-      return "ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY";
-    case ZE_RESULT_ERROR_UNKNOWN:
-      return "ZE_RESULT_ERROR_UNKNOWN";
-    case ZE_RESULT_ERROR_UNSUPPORTED_ALIGNMENT:
-      return "ZE_RESULT_ERROR_UNSUPPORTED_ALIGNMENT";
-    case ZE_RESULT_ERROR_UNSUPPORTED_ENUMERATION:
-      return "ZE_RESULT_ERROR_UNSUPPORTED_ENUMERATION";
-    case ZE_RESULT_ERROR_UNSUPPORTED_FEATURE:
-      return "ZE_RESULT_ERROR_UNSUPPORTED_FEATURE";
-    case ZE_RESULT_ERROR_UNSUPPORTED_IMAGE_FORMAT:
-      return "ZE_RESULT_ERROR_UNSUPPORTED_IMAGE_FORMAT";
-    case ZE_RESULT_ERROR_UNSUPPORTED_SIZE:
-      return "ZE_RESULT_ERROR_UNSUPPORTED_SIZE";
+      return "insufficient host memory to satisfy call";
+    case ZE_RESULT_ERROR_OUT_OF_DEVICE_MEMORY:
+      return "insufficient device memory to satisfy call";
+    case ZE_RESULT_ERROR_MODULE_BUILD_FAILURE:
+      return "error occurred when building module, see build log for details";
+    case ZE_RESULT_ERROR_MODULE_LINK_FAILURE:
+      return "error occurred when linking modules, see build log for details";
+    case ZE_RESULT_ERROR_DEVICE_REQUIRES_RESET:
+      return "device requires a reset";
+    case ZE_RESULT_ERROR_DEVICE_IN_LOW_POWER_STATE:
+      return "device currently in low power state";
+    case ZE_RESULT_EXP_ERROR_DEVICE_IS_NOT_VERTEX:
+      return "device is not represented by a fabric vertex";
+    case ZE_RESULT_EXP_ERROR_VERTEX_IS_NOT_DEVICE:
+      return "fabric vertex does not represent a device";
+    case ZE_RESULT_EXP_ERROR_REMOTE_DEVICE:
+      return "fabric vertex represents a remote device or subdevice";
+    case ZE_RESULT_ERROR_INSUFFICIENT_PERMISSIONS:
+      return "access denied due to permission level";
+    case ZE_RESULT_ERROR_NOT_AVAILABLE:
+      return "resource already in use and simultaneous access not allowed or resource was removed";
+    case ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE:
+      return "external required dependency is unavailable or missing";
+    case ZE_RESULT_WARNING_DROPPED_DATA:
+      return "data may have been dropped";
+    case ZE_RESULT_ERROR_UNINITIALIZED:
+      return "driver is not initialized";
     case ZE_RESULT_ERROR_UNSUPPORTED_VERSION:
-      return "ZE_RESULT_ERROR_UNSUPPORTED_VERSION";
+      return "generic error code for unsupported versions";
+    case ZE_RESULT_ERROR_UNSUPPORTED_FEATURE:
+      return "generic error code for unsupported features";
+    case ZE_RESULT_ERROR_INVALID_ARGUMENT:
+      return "generic error code for invalid arguments";
+    case ZE_RESULT_ERROR_INVALID_NULL_HANDLE:
+      return "handle argument is not valid";
+    case ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE:
+      return "object pointed to by handle still in-use by device";
+    case ZE_RESULT_ERROR_INVALID_NULL_POINTER:
+      return "pointer argument may not be nullptr";
+    case ZE_RESULT_ERROR_INVALID_SIZE:
+      return "size argument is invalid (e.g., must not be zero)";
+    case ZE_RESULT_ERROR_UNSUPPORTED_SIZE:
+      return "size argument is not supported by the device (e.g., too large)";
+    case ZE_RESULT_ERROR_UNSUPPORTED_ALIGNMENT:
+      return "alignment argument is not supported by the device (e.g., too small)";
+    case ZE_RESULT_ERROR_INVALID_SYNCHRONIZATION_OBJECT:
+      return "synchronization object in invalid state";
+    case ZE_RESULT_ERROR_INVALID_ENUMERATION:
+      return "enumerator argument is not valid";
+    case ZE_RESULT_ERROR_UNSUPPORTED_ENUMERATION:
+      return "enumerator argument is not supported by the device";
+    case ZE_RESULT_ERROR_UNSUPPORTED_IMAGE_FORMAT:
+      return "image format is not supported by the device";
+    case ZE_RESULT_ERROR_INVALID_NATIVE_BINARY:
+      return "native binary is not supported by the device";
+    case ZE_RESULT_ERROR_INVALID_GLOBAL_NAME:
+      return "global variable is not found in the module";
+    case ZE_RESULT_ERROR_INVALID_KERNEL_NAME:
+      return "kernel name is not found in the module";
+    case ZE_RESULT_ERROR_INVALID_FUNCTION_NAME:
+      return "function name is not found in the module";
+    case ZE_RESULT_ERROR_INVALID_GROUP_SIZE_DIMENSION:
+      return "group size dimension is not valid for the kernel or device";
+    case ZE_RESULT_ERROR_INVALID_GLOBAL_WIDTH_DIMENSION:
+      return "global width dimension is not valid for the kernel or device";
+    case ZE_RESULT_ERROR_INVALID_KERNEL_ARGUMENT_INDEX:
+      return "kernel argument index is not valid for kernel";
+    case ZE_RESULT_ERROR_INVALID_KERNEL_ARGUMENT_SIZE:
+      return "kernel argument size does not match kernel";
+    case ZE_RESULT_ERROR_INVALID_KERNEL_ATTRIBUTE_VALUE:
+      return "value of kernel attribute is not valid for the kernel or device";
+    case ZE_RESULT_ERROR_INVALID_MODULE_UNLINKED:
+      return "module with imports needs to be linked before kernels can be created from it";
+    case ZE_RESULT_ERROR_INVALID_COMMAND_LIST_TYPE:
+      return "command list type does not match command queue type";
+    case ZE_RESULT_ERROR_OVERLAPPING_REGIONS:
+      return "copy operations do not support overlapping regions of memory";
+    case ZE_RESULT_WARNING_ACTION_REQUIRED:
+      return "an action is required to complete the desired operation";
+    case ZE_RESULT_ERROR_UNKNOWN:
+      return "unknown or internal error";
     default:
-      return "[Code error] " + std::to_string(return_value);
+      return "code " + std::to_string(return_value);
     }
   }
 
