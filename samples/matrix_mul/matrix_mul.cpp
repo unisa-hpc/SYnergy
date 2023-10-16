@@ -38,6 +38,7 @@ int main() {
       int j = idx.get_global_id(1);
 
       c_acc[i][j] = 0.0f;
+      for (int _ = 0; _ < 100; _++)
       for (size_t k = 0; k < n; k++) {
         c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
       }
@@ -51,6 +52,7 @@ int main() {
 #endif
 #ifdef SYNERGY_DEVICE_PROFILING
   std::cout << "Device energy consumption: " << q.device_energy_consumption() << " j\n";
+  std::cout << "Host energy consumption: " << q.host_energy_consumption() << " j\n";
 #endif
 
   host_accessor<value_type, 2> h_acc{c_buf};
