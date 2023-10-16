@@ -1,6 +1,7 @@
 #pragma once
 
 #include "profiling_manager.hpp"
+#include "host_profiler.hpp"
 
 namespace synergy {
 
@@ -106,6 +107,48 @@ public:
   }
 
 private:
+  Manager& manager;
+};
+
+
+template <typename Manager>
+class host_device_profiler {
+public:
+  host_device_profiler(Manager& manager)
+      : manager{manager} {}
+  
+  void operator()() {
+    synergy::device& device = manager.device;
+    auto eh_start = get_host_energy();
+
+#ifdef SYNERGY_LZ_SUPPORT
+    auto ed_start = device.get_energy_usage();
+
+    while (!manager.finished.load(std::memory_order_acquire)) {
+      auto ed_end = device.get_energy_usage();
+      manager.device_energy_consumption = (ed_end - ed_start) / 1000000.0; // microjoules to joules
+      auto eh_end = get_host_energy();
+      manager.host_energy_consumption = (eh_end - eh_start) / 1000000.0; // microjoules to joules
+    }
+#else
+    auto sampling_rate = device.get_power_sampling_rate();
+    double energy_sample = 0.0;
+
+    while (!manager.finished.load(std::memory_order_acquire)) {
+      energy_sample = device.get_power_usage() / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
+      manager.device_energy_consumption += energy_sample;
+      auto eh_end = get_host_energy();
+      manager.host_energy_consumption = (eh_end - eh_start) / 1000000.0; // microjoules to joules
+
+      std::this_thread::sleep_for(std::chrono::milliseconds(sampling_rate));
+    }
+#endif
+  }
+private:
+  /**
+   * @brief Get the host energy value in microjoules
+  */
+
   Manager& manager;
 };
 
