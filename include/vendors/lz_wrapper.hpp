@@ -29,21 +29,19 @@ class management_wrapper<management::lz> {
 
 public:
   inline unsigned int get_devices_count() const {
-    return devices.size();
+    return get_devices().size();
   }
 
-  inline void initialize() {
+  inline void initialize() const {
     check(zeInit(0));
-    init_drivers();
-    init_devices();
   }
 
-  inline void shutdown() {}
+  inline void shutdown() const {}
 
   using lz = management::lz;
 
   inline lz::device_handle get_device_handle(lz::device_identifier id) const {
-    auto ret = (lz::device_handle)devices[id];
+    auto ret = (lz::device_handle)get_devices()[id];
     return ret;
   }
 
@@ -190,30 +188,32 @@ public:
 
 private:
   error_checker<management::lz> check{*this};
-  std::vector<ze_driver_handle_t> drivers;
-  std::vector<ze_device_handle_t> devices;
 
-  inline void init_drivers() {
+  inline std::vector<ze_device_handle_t> get_devices() const {
     unsigned int drivers_count = 0;
-    if (zeDriverGet(&drivers_count, nullptr) == management::lz::return_success && drivers_count) {
-      drivers.resize(drivers_count);
-      zeDriverGet(&drivers_count, drivers.data());
-    }
-  }
+    check(zeDriverGet(&drivers_count, nullptr));
 
-  inline void init_devices() {
-    unsigned int devices_count = 0;
-    unsigned int tmp = 0;
+    if (drivers_count < 1) {
+      throw std::runtime_error{"synergy " + std::string(lz::name) + " wrapper error: could not get Level Zero drivers"};
+    }
+    std::vector<ze_driver_handle_t> drivers(drivers_count);
+    check(zeDriverGet(&drivers_count, drivers.data()));
+
+    unsigned int total_devices_count = 0;
+    unsigned int devices_per_driver = 0;
+
     for (unsigned i = 0; i < drivers.size(); i++) {
-      zeDeviceGet(drivers[i], &tmp, nullptr);
-      devices_count += tmp;
+      check(zeDeviceGet(drivers[i], &devices_per_driver, nullptr));
+      total_devices_count += devices_per_driver;
     }
 
-    devices.resize(devices_count);
+    std::vector<ze_device_handle_t> devices(total_devices_count);
     for (unsigned i = 0, offset = 0; i < drivers.size(); i++) {
-      zeDeviceGet(drivers[i], &tmp, &devices.data()[offset]);
-      offset += tmp;
+      check(zeDeviceGet(drivers[i], &devices_per_driver, &devices.data()[offset]));
+      offset += devices_per_driver;
     }
+
+    return devices;
   }
 
   template <zes_freq_domain_t domain>
@@ -221,10 +221,11 @@ private:
     zes_freq_handle_t ret = nullptr;
     unsigned handles_count = 0;
     check(zesDeviceEnumFrequencyDomains(handle, &handles_count, nullptr));
-    if (handles_count) {
+
+    if (handles_count > 0) {
       std::vector<zes_freq_handle_t> handles(handles_count);
-      zesDeviceEnumFrequencyDomains(handle, &handles_count, handles.data());
-      for (int i = 0; i < handles_count; i++) {
+      check(zesDeviceEnumFrequencyDomains(handle, &handles_count, handles.data()));
+      for (unsigned i = 0; i < handles_count; i++) {
         zes_freq_properties_t props{};
         props.stype = ZES_STRUCTURE_TYPE_FREQ_PROPERTIES;
         if (zesFrequencyGetProperties(handles[i], &props) == lz::return_success) {
@@ -248,7 +249,7 @@ private:
       if (count) {
         std::vector<double> freq_arr(count);
         check(zesFrequencyGetAvailableClocks(h_freq, &count, freq_arr.data()));
-        for (int i = 0; i < count; i++) {
+        for (unsigned i = 0; i < count; i++) {
           freqs.push_back(static_cast<frequency>(freq_arr[i]));
         }
       }
