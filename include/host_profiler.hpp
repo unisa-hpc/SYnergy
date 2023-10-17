@@ -16,7 +16,7 @@ namespace synergy {
 namespace host_profiler {
 namespace detail {
 
-  constexpr auto POWERCAP_ROOT_DIR = "/sys/class/powercap/";
+  constexpr auto POWERCAP_ROOT_DIR = "/sys/class/powercap";
   constexpr auto POWERCAP_ENERGY_FILE = "energy_uj";
   constexpr auto POWERCAP_UNCORE_NAME = "dram";
   constexpr auto POWERCAP_CORE_NAME = "core";
@@ -50,12 +50,12 @@ namespace detail {
   template <typename... Args>
   std::string build_path(Args... args) {
     std::string path;
-    ((path += args) + ...); // fold expression to concatenate the strings
+    ((path += "/" + std::string(args)) + ...); // fold expression to concatenate the strings
     return path;
   }
 } // namespace detail
   using namespace detail;
-  
+
   /**
    * @brief Get the energy consumption of the host in microjoules
    * @details Get the energy consumption of the host in microjoules. The function uses the Powercap
@@ -72,7 +72,7 @@ namespace detail {
 
     // if it's a multi-cpu architecture, we want to sum the energy of all the cpus
     for (const auto& p : get_packages()) {
-      std::string path = build_path(POWERCAP_ROOT_DIR, "/", p, "/", POWERCAP_ENERGY_FILE);
+      std::string path = build_path(POWERCAP_ROOT_DIR, p, POWERCAP_ENERGY_FILE);
       std::ifstream file {path, std::ios::in};
       if (!file.is_open()) {
         throw std::runtime_error("synergy::device error: could not open energy file");
