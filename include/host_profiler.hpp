@@ -22,9 +22,9 @@ namespace detail {
   constexpr auto POWERCAP_CORE_NAME = "core";
   constexpr auto POWERCAP_PACKAGE_NAME = "package";
   
-  inline void do_root() { setreuid(0, 0); }
+  inline void do_root() { setreuid(getuid(), 0); }
 
-  inline void undo_root() { setreuid(geteuid(), getuid()); }
+  inline void undo_root() { setreuid(getuid(), getuid()); }
 
   /**
    * @brief Get the names of the host's packages
