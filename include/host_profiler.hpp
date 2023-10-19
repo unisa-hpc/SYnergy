@@ -21,10 +21,12 @@ namespace detail {
   constexpr auto POWERCAP_UNCORE_NAME = "dram";
   constexpr auto POWERCAP_CORE_NAME = "core";
   constexpr auto POWERCAP_PACKAGE_NAME = "package";
-  
-  inline void do_root() { setreuid(getuid(), 0); }
 
-  inline void undo_root() { setreuid(getuid(), getuid()); }
+  void check_root_privileges() {
+    if (geteuid() != 0) {
+      throw std::runtime_error("synergy::host_profiler error: root privileges required");
+    }
+  }
 
   /**
    * @brief Get the names of the host's packages
@@ -68,20 +70,18 @@ namespace detail {
     double energy = 0;
     unsigned long long e;
 
-    do_root(); // we need root privileges to access the energy files
+    check_root_privileges();
 
     // if it's a multi-cpu architecture, we want to sum the energy of all the cpus
     for (const auto& p : get_packages()) {
       std::string path = build_path(POWERCAP_ROOT_DIR, p, POWERCAP_ENERGY_FILE);
       std::ifstream file {path, std::ios::in};
       if (!file.is_open()) {
-        throw std::runtime_error("synergy::device error: could not open energy file");
+        throw std::runtime_error("synergy::host_profiler error: could not open energy register file");
       }
       file >> e;
       energy += static_cast<double>(e);
     }
-
-    undo_root(); // reset privileges
 
     return energy;
   }
