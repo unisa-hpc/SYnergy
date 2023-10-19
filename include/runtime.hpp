@@ -78,7 +78,7 @@ private:
       if (platform_name.find("level-zero") != std::string::npos ||
           platform_name.find("level zero") != std::string::npos) {
         auto devs = platforms[i].get_devices(info::device_type::gpu);
-        for (int j = 0; j < devs.size(); j++) {
+        for (size_t j = 0; j < devs.size(); j++) {
           auto ptr = std::make_shared<vendor_device<management::lz>>(j);
           devices.insert({devs[j], synergy::device{ptr}});
         }

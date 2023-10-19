@@ -2,6 +2,7 @@ include(FindPackageHandleStandardArgs)
 
 find_path(LevelZero_INCLUDE_DIR
   NAMES level_zero/ze_api.h
+  NAMES level_zero/zes_api.h
 )
 
 find_library(LevelZero_LIBRARY
