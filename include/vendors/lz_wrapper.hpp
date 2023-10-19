@@ -78,12 +78,16 @@ public:
 
   inline void set_core_frequency(const lz::device_handle handle, frequency target) const {
     auto h_freq = get_frequency_handle<ZES_FREQ_DOMAIN_GPU>(handle);
-    check(zesFrequencyOcSetFrequencyTarget(h_freq, target));
+    double freq = static_cast<double>(target);
+    zes_freq_range_t range{freq, freq};
+    check(zesFrequencySetRange(h_freq, &range));
   }
 
   inline void set_uncore_frequency(const lz::device_handle handle, frequency target) const {
     auto h_freq = get_frequency_handle<ZES_FREQ_DOMAIN_MEMORY>(handle);
-    check(zesFrequencyOcSetFrequencyTarget(h_freq, target));
+    double freq = static_cast<double>(target);
+    zes_freq_range_t range{freq, freq};
+    check(zesFrequencySetRange(h_freq, &range));
   }
 
   inline void set_all_frequencies(lz::device_handle handle, frequency core, frequency uncore) const {
