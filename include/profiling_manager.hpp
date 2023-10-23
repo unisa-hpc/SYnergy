@@ -17,10 +17,15 @@ public:
   friend class concurrent_kernel_profiler<profiling_manager>;
   friend class sequential_kernel_profiler<profiling_manager>;
   friend class device_profiler<profiling_manager>;
+  friend class host_device_profiler<profiling_manager>;
 
   profiling_manager(device& device) : device{device} {
 #ifdef SYNERGY_DEVICE_PROFILING
+#ifdef SYNERGY_HOST_PROFILING
+    device_profiler = std::thread{detail::host_device_profiler<profiling_manager>{*this}};
+#else
     device_profiler = std::thread{detail::device_profiler<profiling_manager>{*this}};
+#endif
 #endif
   }
 
@@ -54,11 +59,17 @@ public:
   double device_energy() const {
     return device_energy_consumption;
   }
+#ifdef SYNERGY_HOST_PROFILING
+  double host_energy() const {
+    return host_energy_consumption;
+  }
+#endif
 #endif
 
 private:
   device device;
   double device_energy_consumption = 0.0;
+  double host_energy_consumption = 0.0;
   std::atomic<bool> finished = false;
 #ifdef SYNERGY_KERNEL_PROFILING
   std::vector<kernel> kernels;

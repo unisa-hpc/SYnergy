@@ -32,5 +32,8 @@ int main() {
 #endif
 #ifdef SYNERGY_DEVICE_PROFILING
   std::cout << "Device energy consumption: " << q.device_energy_consumption() << " j\n";
+#ifdef SYNERGY_HOST_DEVICE
+  std::cout << "Host energy consumption: " << q.host_energy_consumption() << " j\n";
+#endif
 #endif
 }
