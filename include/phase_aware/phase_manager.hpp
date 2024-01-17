@@ -31,7 +31,7 @@ struct freq_change_t {
 class phase_manager {
 private:
   target_metric metric;
-  float freq_change_cost = 1.0f; // TODO understand this value
+  float freq_change_overhead = 1.0f; // TODO understand this value
   std::vector<belated_kernel> kernels;
   bool consistent = true;
 
@@ -88,7 +88,7 @@ protected:
       frequency best_freq_r = this->find_best_frequency(mit + 1, end);
       auto cost_l = this->calculate_cost(begin, mit, best_freq_l);
       auto cost_r = this->calculate_cost(mit + 1, end, best_freq_r);
-      auto cost = cost_l + cost_r + freq_change_cost;
+      auto cost = cost_l + cost_r + freq_change_overhead;
       if (cost < min) {
         min = best.cost = cost;
         best.index = it;
@@ -140,7 +140,7 @@ protected:
       right_cost += change.cost;
     }
 
-    auto cost_change = mid_change.cost + left_cost + right_cost + this->freq_change_cost;
+    auto cost_change = mid_change.cost + left_cost + right_cost + this->freq_change_overhead;
 
     if (cost_change < cost_no_change) {
       left.push_back(mid_change);
@@ -181,6 +181,14 @@ protected:
     return this->one_change(kernels.begin(), kernels.end());
   }
 
+  /**
+   * @brief Calculates the overhead of a frequency change.
+   * @todo Understand how to calculate the overhead.
+   */
+  void compute_overhead() {
+    this->freq_change_overhead = 1.0f;
+  }
+
 public:
   phase_manager(target_metric metric) : metric{metric} {}
 
@@ -190,7 +198,13 @@ public:
    * @return A vector of phase_t objects representing the phases.
    */
   std::vector<phase_t> get_phases() {
+    // set the consistency to false in order to avoid adding kernels after the phases are calculated
     consistent = false;
+
+    // compute the overhead of a frequency change
+    compute_overhead();
+
+    // calculate the best changes
     std::vector<phase_t> phases;
     auto changes = this->flex_change();
     size_t start = 0;
