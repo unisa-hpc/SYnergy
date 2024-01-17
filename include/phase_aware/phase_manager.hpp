@@ -21,6 +21,7 @@ private:
   target_metric metric;
   float freq_change_cost = 1.0f; // TODO understand this value
   std::vector<belated_kernel> kernels;
+  bool consistent = true;
 
 protected:
 
@@ -177,6 +178,7 @@ public:
    * @return A vector of phase_t objects representing the phases.
    */
   std::vector<phase_t> get_phases() {
+    consistent = false;
     std::vector<phase_t> phases;
     auto changes = this->flex_change();
     size_t start = 0;
@@ -193,6 +195,41 @@ public:
       start = change + 1;
     }
     return phases;
+  }
+
+  /**
+   * @brief Adds a kernel to the phase manager.
+   * @details This function is used to add a kernel to the phase manager.
+   * @param kernel The kernel to be added.
+   * @throw std::runtime_error if the phase manager is not consistent.
+  */
+  void add_kernel(belated_kernel kernel) {
+    if (!consistent) {
+      throw std::runtime_error("synergy::phase_manager error: cannot add kernel to inconsistent phase manager");
+    }
+    kernels.push_back(kernel);
+  }
+
+  /**
+   * @brief Get the kernels.
+   *
+   * This function returns a constant reference to the vector of belated_kernel objects.
+   *
+   * @return A constant reference to the vector of belated_kernel objects.
+   */
+  const std::vector<belated_kernel>& get_kernels() const {
+    return kernels;
+  }
+
+  /**
+   * @brief Flushes any pending changes in the phase manager.
+   * 
+   * This function is responsible for flushing any pending changes in the phase manager.
+   * It ensures that all changes made to the phase manager are applied and reflected in the system.
+   */
+  void flush() {
+    kernels.clear();
+    consistent = true;
   }
 };
 
