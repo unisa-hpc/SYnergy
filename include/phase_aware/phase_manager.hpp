@@ -14,6 +14,7 @@ struct freq_change_t {
   size_t index;
   frequency left_freq;
   frequency right_freq;
+  double cost;
 };
 
 class phase_manager {
@@ -64,7 +65,8 @@ protected:
     freq_change_t best {
       .index = 0,
       .left_freq = 0,
-      .right_freq = 0
+      .right_freq = 0,
+      .cost = min
     }; // TODO maybe setting a default value is a good idea
 
     for (int it = begin; it < end - 1; it++) {
@@ -79,9 +81,42 @@ protected:
         best.index = it;
         best.left_freq = best_freq_l;
         best.right_freq = best_freq_r;
+        best.cost = cost;
       }
     }
     return best;
+  }
+
+  template<typename Iterator>
+  std::vector<freq_change_t> flex_change(Iterator begin, Iterator end, frequency curr_change) const {
+    if (end - begin < 2) {
+      return {};
+    }
+
+    auto cost_no_change = this->calculate_cost(begin, end, curr_change);
+
+    freq_change_t mid_change = this->one_change(begin, end);
+    auto left = this->flex_change(begin, begin + mid_change.index, mid_change.left_freq);
+    auto right = this->flex_change(begin + mid_change.index + 1, end, mid_change.right_freq);
+
+    double left_cost = 0.0;
+    for (auto& change : left) {
+      left_cost += change.cost;
+    }
+    double right_cost = 0.0;
+    for (auto& change : right) {
+      right_cost += change.cost;
+    }
+
+    auto cost_change = mid_change.cost + left_cost + right_cost + this->freq_change_cost;
+
+    if (cost_change < cost_no_change) {
+      left.push_back(mid_change);
+      left.insert(left.end(), right.begin(), right.end());
+      return left;
+    } else {
+      return {};
+    }
   }
 
   /**
