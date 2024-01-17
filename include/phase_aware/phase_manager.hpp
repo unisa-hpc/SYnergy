@@ -87,6 +87,14 @@ protected:
     return best;
   }
 
+  /**
+   * Calculates the flexible change in frequency for a given range of elements.
+   *
+   * @param begin The iterator pointing to the beginning of the range.
+   * @param end The iterator pointing to the end of the range.
+   * @param curr_change The current change in frequency.
+   * @return A vector of freq_change_t representing the flexible change in frequency.
+   */
   template<typename Iterator>
   std::vector<freq_change_t> flex_change(Iterator begin, Iterator end, frequency curr_change) const {
     if (end - begin < 2) {
