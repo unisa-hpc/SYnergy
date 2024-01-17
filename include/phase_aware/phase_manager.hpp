@@ -47,7 +47,7 @@ protected:
   double calculate_cost(Iterator begin, Iterator end, frequency freq = 0) {
     double cost = 0.0;
     for (auto it = begin; it != end; ++it) {
-      cost += freq ? it->get_cost(freq, metric) : it->get_cost(metric);
+      cost += get_cost(metric, freq);
     }
     return cost;
   }  

@@ -49,15 +49,10 @@ public:
    * @throw std::runtime_error if the core frequency prediction is not found
   */
   inline float calculate_time_speedup(frequency freq) const {
-    try {
-      auto curr_time = core_freq_predictions.at(setted_core_frequency).time;
-      auto new_time = core_freq_predictions.at(freq).time;
+    auto curr_time = core_freq_predictions.at(setted_core_frequency).time;
+    auto new_time = core_freq_predictions.at(freq).time;
 
-      return curr_time / new_time;
-
-    } catch (const std::out_of_range& e) {
-      throw std::runtime_error("synergy::belated_kernel error: core frequency prediction not found");
-    };
+    return curr_time / new_time;
   }
 
   /**
@@ -68,66 +63,62 @@ public:
    * @throw std::runtime_error if the core frequency prediction is not found
   */
   inline float calculate_energy_saving(frequency freq) const {
-    try {
-      auto curr_energy = core_freq_predictions.at(setted_core_frequency).energy;
-      auto new_energy = core_freq_predictions.at(freq).energy;
+    auto curr_energy = core_freq_predictions.at(setted_core_frequency).energy;
+    auto new_energy = core_freq_predictions.at(freq).energy;
 
-      return curr_energy - new_energy;
-
-    } catch (const std::out_of_range& e) {
-      throw std::runtime_error("synergy::belated_kernel error: core frequency prediction not found");
-    };
+    return curr_energy - new_energy;
   }
 
   /**
-   * Calculates the cost associated with a given frequency.
-   *
-   * @param freq The frequency for which to calculate the cost.
-   * @return The cost associated with the given frequency.
+   * @brief Calculates the metric value for a given target metric and frequency.
+   * 
+   * @param metric The target metric.
+   * @param freq The frequency.
+   * @return The calculated metric value.
+   * @throw std::out_of_range if the core frequency prediction is not found
+   * @todo Refine the calculation of the metric values.
    */
-  inline float get_cost(frequency freq, target_metric target) {
-    auto curr_freq = this->get_actual_core_frequency();
-    this->set_actual_core_frequency(freq);
-    try {
-      auto cost = this->get_cost(target);
-      this->set_actual_core_frequency(curr_freq);
-      return cost;
-    } catch (const std::out_of_range& e) {
-      this->set_actual_core_frequency(curr_freq);
-      throw std::runtime_error("synergy::belated_kernel error: core frequency prediction not found");
+  inline float get_metric_value(target_metric metric, frequency freq) {
+    if (core_freq_predictions.find(freq) == core_freq_predictions.end()) {
+      throw std::out_of_range("synergy::belated_kernel error: core frequency prediction not found");
     }
-  }
-
-  /**
-   * @brief Returns the cost associated with the kernel.
-   *
-   * @return The cost of the kernel.
-   */
-  inline float get_cost(target_metric target) {
-    switch (target) {
+    
+    switch (metric) {
       case target_metric::EDP:
-        return core_freq_predictions.at(setted_core_frequency).energy * core_freq_predictions.at(setted_core_frequency).time;
+        return core_freq_predictions.at(freq).energy * core_freq_predictions.at(freq).time;
       case target_metric::ED2P:
-        return core_freq_predictions.at(setted_core_frequency).energy * core_freq_predictions.at(setted_core_frequency).time * core_freq_predictions.at(setted_core_frequency).time;
+        return core_freq_predictions.at(freq).energy * core_freq_predictions.at(freq).time * core_freq_predictions.at(freq).time;
       case target_metric::ES_25:
-        return calculate_energy_saving(setted_core_frequency) / core_freq_predictions.at(setted_core_frequency).energy;
+        return calculate_energy_saving(freq) / core_freq_predictions.at(freq).energy;
       case target_metric::ES_50:
-        return calculate_energy_saving(setted_core_frequency) / core_freq_predictions.at(setted_core_frequency).energy;
+        return calculate_energy_saving(freq) / core_freq_predictions.at(freq).energy;
       case target_metric::ES_75:
-        return calculate_energy_saving(setted_core_frequency) / core_freq_predictions.at(setted_core_frequency).energy;
+        return calculate_energy_saving(freq) / core_freq_predictions.at(freq).energy;
       case target_metric::ES_100:
-        return calculate_energy_saving(setted_core_frequency) / core_freq_predictions.at(setted_core_frequency).energy;
+        return calculate_energy_saving(freq) / core_freq_predictions.at(freq).energy;
       case target_metric::PL_00:
-        return calculate_time_speedup(setted_core_frequency) / core_freq_predictions.at(setted_core_frequency).time;
+        return calculate_time_speedup(freq) / core_freq_predictions.at(freq).time;
       case target_metric::PL_25:
-        return calculate_time_speedup(setted_core_frequency) / core_freq_predictions.at(setted_core_frequency).time;
+        return calculate_time_speedup(freq) / core_freq_predictions.at(freq).time;
       case target_metric::PL_50:
-        return calculate_time_speedup(setted_core_frequency) / core_freq_predictions.at(setted_core_frequency).time;
+        return calculate_time_speedup(freq) / core_freq_predictions.at(freq).time;
       case target_metric::PL_75:
-        return calculate_time_speedup(setted_core_frequency) / core_freq_predictions.at(setted_core_frequency).time;
+        return calculate_time_speedup(freq) / core_freq_predictions.at(freq).time;
       default:
         return 0;
     }
+  }
+
+  /**
+   * Calculates the cost associated with a given frequency comparing the provided frequency values with the best predicted.
+   *
+   * @param target The target metric.
+   * @param freq The frequency for which to calculate the cost. If not specified, the actual core frequency is used.
+   * @return A float value representing the cost. If the value is positive, the cost is higher than the best predicted, otherwise it is lower.
+   */
+  inline float get_cost(target_metric target, frequency freq = 0) {
+    auto comp_freq = freq ? freq : this->get_actual_core_frequency();
+    return get_metric_value(target, freq) - get_metric_value(target, this->get_best_core_frequency());
   }
 };
 
