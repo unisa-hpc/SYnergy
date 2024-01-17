@@ -2,6 +2,7 @@
 
 #include <sycl/sycl.hpp>
 #include <vector>
+#include <set>
 #include "types.hpp"
 #include "belated_kernel.hpp"
 
@@ -12,8 +13,6 @@ namespace detail {
 
 struct freq_change_t {
   size_t index;
-  frequency left_freq;
-  frequency right_freq;
   double cost;
 };
 
@@ -59,17 +58,18 @@ protected:
    * @return The frequency change between the two iterators.
    */
   template<typename Iterator>
-  freq_change_t one_change(Iterator begin, Iterator end) const {
+  freq_change_t one_change(Iterator begin, Iterator end) {
     double min = std::numeric_limits<double>::max(); // TODO check if it needs another value
     
+    frequency freq_left, freq_right;
+    freq_left = freq_right = this->find_best_frequency(begin, end);
+
     freq_change_t best {
       .index = 0,
-      .left_freq = 0,
-      .right_freq = 0,
       .cost = min
     }; // TODO maybe setting a default value is a good idea
 
-    for (int it = begin; it < end - 1; it++) {
+    for (auto it = begin; it < end - 1; it++) {
       auto mit = begin + it;
       frequency best_freq_l = this->find_best_frequency(begin, mit);
       frequency best_freq_r = this->find_best_frequency(mit + 1, end);
@@ -77,15 +77,26 @@ protected:
       auto cost_r = this->calculate_cost(mit + 1, end, best_freq_r);
       auto cost = cost_l + cost_r + freq_change_cost;
       if (cost < min) {
-        min = cost;
+        min = best.cost = cost;
         best.index = it;
         best.left_freq = best_freq_l;
         best.right_freq = best_freq_r;
-        best.cost = cost;
       }
+    }
+    for (auto lit = begin + it; lit >= begin; lit--) {
+      lit->set_actual_core_frequency(freq_left);
+    }
+    for (auto rit = begin + it + 1; rit < end; rit++) {
+      rit->set_actual_core_frequency(freq_right);
     }
     return best;
   }
+
+  struct phase_t {
+    size_t start;
+    size_t end;
+    frequency target_freq;
+  };
 
   /**
    * Calculates the flexible change in frequency for a given range of elements.
@@ -96,7 +107,7 @@ protected:
    * @return A vector of freq_change_t representing the flexible change in frequency.
    */
   template<typename Iterator>
-  std::vector<freq_change_t> flex_change(Iterator begin, Iterator end, frequency curr_change) const {
+  std::vector<freq_change_t> flex_change(Iterator begin, Iterator end, frequency curr_change) {
     if (end - begin < 2) {
       return {};
     }
@@ -128,6 +139,28 @@ protected:
   }
 
   /**
+   * @brief Calculates the best changes to perform in a given range.
+   * @details This function is used to calculate the best changes to perform in a given range of elements.
+   * It Uses the find_best_frequency and calculate_cost functions to calculate the best frequency and the cost of the given starting range.
+   * @param begin The beginning iterator.
+   * @param end The ending iterator.
+   * @return A vector of freq_change_t representing the best changes.
+  */
+  template<typename Iterator>
+  std::vector<freq_change_t> flex_change(Iterator begin, Iterator end) {
+    auto freq = this->find_best_frequency(begin, end);
+    return this->flex_change(begin, end, freq);
+  }
+
+  /**
+   * @brief Calculates the best changes to perform in the kernel vector.
+   * @return A vector of freq_change_t representing the best changes.
+  */
+  std::vector<freq_change_t> flex_change() {
+    return this->flex_change(kernels.begin(), kernels.end());
+  }
+
+  /**
    * @brief Returns a the best frequency change in the kernel vector.
    * @return The freq_change_t representing a single change.
    */
@@ -138,6 +171,29 @@ protected:
 public:
   phase_manager(target_metric metric) : metric{metric} {}
 
+  /**
+   * Retrieves the phases.
+   * 
+   * @return A vector of phase_t objects representing the phases.
+   */
+  std::vector<phase_t> get_phases() {
+    std::vector<phase_t> phases;
+    auto changes = this->flex_change();
+    size_t start = 0;
+    std::set<size_t> change_points;
+    for (auto& change : changes) {
+      change_points.insert(change.index);
+    }
+    for (auto& change : change_points) {
+      phases.push_back({
+        .start = start,
+        .end = change,
+        .target_freq = kernels[start].get_actual_core_frequency()
+      });
+      start = change + 1;
+    }
+    return phases;
+  }
 };
 
 } // namespace detail
