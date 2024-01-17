@@ -203,7 +203,7 @@ public:
    * @param kernel The kernel to be added.
    * @throw std::runtime_error if the phase manager is not consistent.
   */
-  void add_kernel(belated_kernel kernel) {
+  inline void add_kernel(belated_kernel kernel) {
     if (!consistent) {
       throw std::runtime_error("synergy::phase_manager error: cannot add kernel to inconsistent phase manager");
     }
@@ -217,8 +217,16 @@ public:
    *
    * @return A constant reference to the vector of belated_kernel objects.
    */
-  const std::vector<belated_kernel>& get_kernels() const {
+  inline const std::vector<belated_kernel>& get_kernels() const {
     return kernels;
+  }
+
+  /**
+   * @brief Checks if the phase manager is consistent.
+   * @return A boolean value representing the consistency of the phase manager.
+  */
+  inline const bool is_consistent() const {
+    return consistent;
   }
 
   /**
@@ -227,7 +235,7 @@ public:
    * This function is responsible for flushing any pending changes in the phase manager.
    * It ensures that all changes made to the phase manager are applied and reflected in the system.
    */
-  void flush() {
+  inline void flush() {
     kernels.clear();
     consistent = true;
   }
