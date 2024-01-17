@@ -16,6 +16,18 @@ struct freq_change_t {
   double cost;
 };
 
+/**
+ * @class phase_manager
+ * @brief Manages the phases and frequency changes for a set of kernels.
+ *
+ * The `phase_manager` class is responsible for managing the phases and frequency changes
+ * for a set of kernels. It provides functions to calculate the best frequency changes,
+ * calculate the cost of a given range, and retrieve the phases.
+ *
+ * The class also allows adding kernels, checking the consistency of the phase manager,
+ * and flushing any pending changes.
+ * @warning The phase manager is not thread-safe.
+ */
 class phase_manager {
 private:
   target_metric metric;
