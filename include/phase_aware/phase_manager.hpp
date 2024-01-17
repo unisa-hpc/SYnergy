@@ -73,9 +73,6 @@ protected:
   template<typename Iterator>
   freq_change_t one_change(Iterator begin, Iterator end) {
     double min = std::numeric_limits<double>::max(); // TODO check if it needs another value
-    
-    frequency freq_left, freq_right;
-    freq_left = freq_right = this->find_best_frequency(begin, end);
 
     freq_change_t best {
       .index = 0,
@@ -92,16 +89,9 @@ protected:
       if (cost < min) {
         min = best.cost = cost;
         best.index = it;
-        best.left_freq = best_freq_l;
-        best.right_freq = best_freq_r;
       }
     }
-    for (auto lit = begin + it; lit >= begin; lit--) {
-      lit->set_actual_core_frequency(freq_left);
-    }
-    for (auto rit = begin + it + 1; rit < end; rit++) {
-      rit->set_actual_core_frequency(freq_right);
-    }
+
     return best;
   }
 
@@ -216,7 +206,7 @@ public:
       phases.push_back({
         .start = start,
         .end = change,
-        .target_freq = kernels[start].get_actual_core_frequency()
+        .target_freq = this->find_best_frequency(kernels.begin() + start, kernels.begin() + change)
       });
       start = change + 1;
     }
