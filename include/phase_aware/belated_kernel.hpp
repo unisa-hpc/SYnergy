@@ -117,7 +117,7 @@ public:
    */
   inline float get_cost(target_metric target, frequency freq = 0) {
     auto comp_freq = freq ? freq : this->get_actual_core_frequency();
-    return get_metric_value(target, freq) - get_metric_value(target, this->get_best_core_frequency());
+    return get_metric_value(target, comp_freq) - get_metric_value(target, this->get_best_core_frequency());
   }
 };
 
