@@ -27,7 +27,7 @@ int main() {
   synergy::detail::belated_kernel k2 {[&](sycl::handler& cgh) {
     synergy::accessor<int, 1, sycl::access_mode::read_write> accB(bufB, cgh);
     cgh.parallel_for<class subtract_kernel>(sycl::range<1>{N}, [=](sycl::id<1> idx) {
-      accB[idx] += 1;
+      accB[idx] -= 1;
     });
   }};
 
@@ -56,4 +56,18 @@ int main() {
     std::cout << node.id << " ";
   }
   std::cout << std::endl;
+
+  for (auto& kernel : kernels) {
+    q.submit(kernel.cgh);
+  }
+  q.wait();
+
+  sycl::host_accessor<int, 1, sycl::access_mode::read_write> accC(bufC);
+  for (size_t i = 0; i < N; ++i) {
+    if (accC[i] != 4) {
+      std::cout << "Error: accC[" << i << "] = " << accC[i] << std::endl;
+      return 1;
+    }
+  }
+  std::cout << "Success!" << std::endl;
 }
