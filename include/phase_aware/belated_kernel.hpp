@@ -7,7 +7,6 @@
 
 
 namespace synergy {
-inline namespace v1 {
 namespace detail {
 
 /**
@@ -123,5 +122,4 @@ public:
 };
 
 } // namespace detail
-} // namespace v1
 } // namespace synergy

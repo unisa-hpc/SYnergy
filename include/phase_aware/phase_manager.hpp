@@ -8,7 +8,6 @@
 
 
 namespace synergy {
-inline namespace v1 {
 namespace detail {
 
 struct freq_change_t {
@@ -258,5 +257,4 @@ public:
 };
 
 } // namespace detail
-} // namespace v1
 } // namespace synergy
