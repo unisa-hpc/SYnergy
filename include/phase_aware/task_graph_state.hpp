@@ -75,7 +75,10 @@ private:
   bool consistent = false;
 
 protected:
-  void compute_dependencies() {
+  /**
+   * Identifies the dependencies between tasks in the task graph.
+   */
+  void identify_dependencies() {
     auto task_graph = detail::TaskGraphState::getInstance();
 
     sycl::queue q;
@@ -92,19 +95,43 @@ protected:
     cg.end_recording(q);
   }
 
+  /**
+   * @brief Compute the graph structure
+   * @details This function computes the graph structure by comparing the dependencies of each kernel
+   * @todo This function doesn't consider the access mode of the accessors; it can be improved by considering the access mode
+  */
   void compute_graph_structure() {
     auto task_graph = detail::TaskGraphState::getInstance();
 
     auto dependencies = task_graph->get_dependencies();
-
+    for (size_t i = 0; i < dependencies.size(); i++) {
+      auto& kernel = dependencies[i];
+      for (auto& dependency : kernel) {
+        for (size_t j = i + 1; j < dependencies.size(); j++) {
+          auto& other_kernel = dependencies[j];
+          for (auto& other_dependency : other_kernel) {
+            if (dependency.buffer_id == other_dependency.buffer_id) {
+              edges.push_back({nodes[i], nodes[j]});
+            }
+          }
+        }
+      }
+    }
   }
 
 public:
   TaskGraphBuilder(std::vector<belated_kernel>& kernels) : kernels(kernels) {}
 
+  /**
+   * @brief Builds the task graph state.
+   */
   inline void build() {
-    compute_dependencies();
+    if (consistent) {
+      return;
+    }
+    identify_dependencies();
     compute_graph_structure();
+    consistent = true;
   }
 
   inline const std::vector<belated_kernel>& get_kernels() const {
@@ -112,11 +139,44 @@ public:
   }
 
   inline std::vector<node_t> get_nodes() const {
+    if (!consistent) {
+      throw std::runtime_error("synergy::detail::TaskGraphBuilder error: you must call build() before getting the nodes");
+    }
     return nodes;
   }
 
   inline std::vector<edge_t> get_edges() const {
+    if (!consistent) {
+      throw std::runtime_error("synergy::detail::TaskGraphBuilder error: you must call build() before getting the edges");
+    }
     return edges;
+  }
+
+  inline std::vector<node_t> get_topological_order() const {
+    if (!consistent) {
+      throw std::runtime_error("synergy::detail::TaskGraphBuilder error: you must call build() before getting the topological order");
+    }
+    std::vector<node_t> topological_order;
+    std::vector<bool> visited(nodes.size(), false);
+    std::function<void(size_t)> dfs = [&](size_t node_id) {
+      visited[node_id] = true;
+      for (auto& edge : edges) {
+        if (edge.src.id == node_id && !visited[edge.dst.id]) {
+          dfs(edge.dst.id);
+        }
+      }
+      topological_order.push_back(nodes[node_id]);
+    };
+    for (size_t i = 0; i < nodes.size(); i++) {
+      if (!visited[i]) {
+        dfs(i);
+      }
+    }
+    std::vector<node_t> ret;
+    for (int i = topological_order.size() - 1; i >= 0; i--) {
+      ret.push_back(topological_order[i]);
+    }
+    return ret;
   }
 };
 

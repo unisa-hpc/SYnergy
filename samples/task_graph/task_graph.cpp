@@ -45,14 +45,15 @@ int main() {
 
   synergy::detail::TaskGraphBuilder builder {kernels};
   builder.build();
-  auto task_graph = synergy::detail::TaskGraphState::getInstance();
-  auto dependencies = task_graph->get_dependencies();
-  for (int i = 0; i < dependencies.size(); ++i) {
-    auto& level = dependencies[i];
-    std::cout << "Kernel " << i << ": ";
-    for (auto& node : level) {
-      std::cout << node.buffer_id << " "; 
-    }
-    std::cout << std::endl;
+  auto edges = builder.get_edges();
+  for (auto& edge : edges) {
+    std::cout << edge.src.id << " -> " << edge.dst.id << std::endl;
   }
+
+  auto topological_order = builder.get_topological_order();
+  std::cout << "Topological order: ";
+  for (auto& node : topological_order) {
+    std::cout << node.id << " ";
+  }
+  std::cout << std::endl;
 }
