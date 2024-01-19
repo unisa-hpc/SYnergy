@@ -51,11 +51,11 @@ foreach(target IN LISTS all_targets)
     endif()
 
     if(SYNERGY_LZ_SUPPORT)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=spir64_gen")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
       set(SYNERGY_SAMPLES_LZ_ARCH "" CACHE STRING "Level Zero device architecture e.g. acm-g10")
       if(NOT SYNERGY_SAMPLES_ROCM_ARCH STREQUAL "")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend \"-device ${SYNERGY_SAMPLES_LZ_ARCH}\"")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
       endif()
     endif()
 
