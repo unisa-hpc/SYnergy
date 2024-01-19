@@ -5,6 +5,7 @@
 #include <set>
 #include "types.hpp"
 #include "belated_kernel.hpp"
+#include "task_graph_state.hpp"
 
 
 namespace synergy {
@@ -13,6 +14,12 @@ namespace detail {
 struct freq_change_t {
   size_t index;
   double cost;
+};
+
+struct phase_t {
+  size_t start;
+  size_t end;
+  frequency target_freq;
 };
 
 /**
@@ -31,7 +38,8 @@ class phase_manager {
 private:
   target_metric metric;
   float freq_change_overhead = 1.0f; // TODO understand this value
-  std::vector<belated_kernel> kernels;
+  std::vector<belated_kernel>& kernels;
+  synergy::detail::task_graph_t& task_graph;
   bool consistent = true;
 
 protected:
@@ -58,7 +66,7 @@ protected:
   double calculate_cost(Iterator begin, Iterator end, frequency freq = 0) {
     double cost = 0.0;
     for (auto it = begin; it != end; ++it) {
-      cost += get_cost(metric, freq);
+      cost += it->get_cost(metric, freq);
     }
     return cost;
   }  
@@ -79,26 +87,19 @@ protected:
     }; // TODO maybe setting a default value is a good idea
 
     for (auto it = begin; it < end - 1; it++) {
-      auto mit = begin + it;
-      frequency best_freq_l = this->find_best_frequency(begin, mit);
-      frequency best_freq_r = this->find_best_frequency(mit + 1, end);
-      auto cost_l = this->calculate_cost(begin, mit, best_freq_l);
-      auto cost_r = this->calculate_cost(mit + 1, end, best_freq_r);
+      frequency best_freq_l = this->find_best_frequency(begin, it);
+      frequency best_freq_r = this->find_best_frequency(it + 1, end);
+      auto cost_l = this->calculate_cost(begin, it, best_freq_l);
+      auto cost_r = this->calculate_cost(it + 1, end, best_freq_r);
       auto cost = cost_l + cost_r + freq_change_overhead;
       if (cost < min) {
         min = best.cost = cost;
-        best.index = it;
+        best.index = std::distance(begin, it);
       }
     }
 
     return best;
   }
-
-  struct phase_t {
-    size_t start;
-    size_t end;
-    frequency target_freq;
-  };
 
   /**
    * Calculates the flexible change in frequency for a given range of elements.
@@ -117,8 +118,10 @@ protected:
     auto cost_no_change = this->calculate_cost(begin, end, curr_change);
 
     freq_change_t mid_change = this->one_change(begin, end);
-    auto left = this->flex_change(begin, begin + mid_change.index, mid_change.left_freq);
-    auto right = this->flex_change(begin + mid_change.index + 1, end, mid_change.right_freq);
+    auto left_freq = this->find_best_frequency(begin, begin + mid_change.index);
+    auto right_freq = this->find_best_frequency(begin + mid_change.index + 1, end);
+    auto left = this->flex_change(begin, begin + mid_change.index, left_freq);
+    auto right = this->flex_change(begin + mid_change.index + 1, end, right_freq);
 
     double left_cost = 0.0;
     for (auto& change : left) {
@@ -179,7 +182,10 @@ protected:
   }
 
 public:
-  phase_manager(target_metric metric) : metric{metric} {}
+  phase_manager(target_metric metric, 
+                std::vector<belated_kernel>& kernels, 
+                synergy::detail::task_graph_t& task_graph) : 
+                  metric{metric}, kernels{kernels}, task_graph{task_graph} {}
 
   /**
    * Retrieves the phases.
@@ -204,7 +210,7 @@ public:
     for (auto& change : change_points) {
       phases.push_back({
         .start = start,
-        .end = change,
+        .end = change + 1,
         .target_freq = this->find_best_frequency(kernels.begin() + start, kernels.begin() + change)
       });
       start = change + 1;

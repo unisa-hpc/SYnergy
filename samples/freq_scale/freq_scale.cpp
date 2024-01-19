@@ -24,8 +24,8 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  synergy::queue q1 { mem_freq, core_freq, sycl::gpu_selector_v };
-  synergy::queue q2 { sycl::gpu_selector_v };
+  synergy::queue<> q1 { mem_freq, core_freq, sycl::gpu_selector_v };
+  synergy::queue<> q2 { sycl::gpu_selector_v };
 
   std::vector<int> a(N, 2);
   std::vector<int> b(N, 3);

@@ -8,7 +8,7 @@ int main() {
   std::vector<float> z(2048);
   float alpha{10};
 
-  synergy::queue q{gpu_selector_v};
+  synergy::queue<> q{gpu_selector_v};
 
   buffer<float, 1> x_buf{x.data(), 2048};
   buffer<float, 1> y_buf{y.data(), 2048};

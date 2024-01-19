@@ -9,7 +9,7 @@ using value_type = float;
 
 int main() {
   // Create a queue with a default device
-  synergy::queue q(gpu_selector_v);
+  synergy::queue<> q(gpu_selector_v);
 
   // Create some buffers
   constexpr size_t n = 2048;

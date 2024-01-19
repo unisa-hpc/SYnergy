@@ -5,7 +5,7 @@
 using namespace sycl;
 
 #define N 1000000
-int multi_queue(synergy::queue& q, const std::vector<int>& a, const std::vector<int>& b) {
+int multi_queue(synergy::queue<>& q, const std::vector<int>& a, const std::vector<int>& b) {
   std::vector<int> s1(N), s2(N), s3(N);
   int iter = 1;
   sycl::buffer a_buf(a.data(), sycl::range<1>{N});
@@ -100,8 +100,8 @@ int main() {
   std::fill(a.begin(), a.end(), 1);
   std::fill(b.begin(), b.end(), 1);
 
-  synergy::queue q1(sycl::gpu_selector_v);
-  synergy::queue q2(sycl::gpu_selector_v);
+  synergy::queue<> q1(sycl::gpu_selector_v);
+  synergy::queue<> q2(sycl::gpu_selector_v);
 
   multi_queue(q1, a, b);
   multi_queue(q2, a, b);

@@ -4,8 +4,12 @@
 
 #include "kernel.hpp"
 #include "profiling_manager.hpp"
+#include "phase_aware/belated_kernel.hpp"
+#include "phase_aware/phase_manager.hpp"
+#include "phase_aware/task_graph_state.hpp"
 #include "runtime.hpp"
 #include "types.hpp"
+#include <memory>
 
 #if defined(SYNERGY_DEVICE_PROFILING) || defined(SYNERGY_KERNEL_PROFILING)
 #define SYNERGY_ENABLE_PROFILING
@@ -13,20 +17,30 @@
 
 namespace synergy {
 
-class queue : public sycl::queue {
+namespace property {
+  enum class queue_mode {
+    standard,
+    phase_aware,
+  };
+
+} // namespace property
+
+namespace detail {
+
+class synergy_queue : public sycl::queue {
 public:
 #ifdef SYNERGY_ENABLE_PROFILING
   template <typename... Rest>
-  queue(Rest&&... args)
-      : sycl::queue(synergy::queue::check_args(std::forward<Rest>(args)...)),
+  synergy_queue(Rest&&... args)
+      : sycl::queue(synergy::detail::synergy_queue::check_args(std::forward<Rest>(args)...)),
         device{synergy::detail::runtime::synergy_device_from(get_device())},
         profiling{std::make_shared<detail::profiling_manager>(device)} {
     assert_profiling_properties();
   }
 
   template <typename... Rest>
-  queue(frequency uncore_frequency, frequency core_frequency, Rest&&... args)
-      : sycl::queue(synergy::queue::check_args(std::forward<Rest>(args)...)),
+  synergy_queue(frequency uncore_frequency, frequency core_frequency, Rest&&... args)
+      : sycl::queue(synergy::detail::synergy_queue::check_args(std::forward<Rest>(args)...)),
         device{synergy::detail::runtime::synergy_device_from(get_device())},
         core_target_frequency{core_frequency},
         uncore_target_frequency{uncore_frequency},
@@ -35,13 +49,13 @@ public:
   }
 #else
   template <typename... Rest>
-  queue(Rest&&... args)
-      : sycl::queue(synergy::queue::check_args(std::forward<Rest>(args)...)),
+  synergy_queue(Rest&&... args)
+      : sycl::queue(synergy::detail::synergy_queue::check_args(std::forward<Rest>(args)...)),
         device{synergy::detail::runtime::synergy_device_from(get_device())} {}
 
   template <typename... Rest>
-  queue(frequency uncore_frequency, frequency core_frequency, Rest&&... args)
-      : sycl::queue(synergy::queue::check_args(std::forward<Rest>(args)...)),
+  synergy_queue(frequency uncore_frequency, frequency core_frequency, Rest&&... args)
+      : sycl::queue(synergy::detail::synergy_queue::check_args(std::forward<Rest>(args)...)),
         device{synergy::detail::runtime::synergy_device_from(get_device())},
         core_target_frequency{core_frequency},
         uncore_target_frequency{uncore_frequency} {}
@@ -54,18 +68,18 @@ public:
   // #endif
 
   // explicitly declared to avoid clashes with the variadic constructor
-  queue(queue&) = default;
-  queue(const queue&) = default;
-  queue(queue&&) = default;
-  queue& operator=(const queue&) = default;
-  queue& operator=(queue&) = default;
-  queue& operator=(queue&&) = default;
+  synergy_queue(synergy_queue&) = default;
+  synergy_queue(const synergy_queue&) = default;
+  synergy_queue(synergy_queue&&) = default;
+  synergy_queue& operator=(const synergy_queue&) = default;
+  synergy_queue& operator=(synergy_queue&) = default;
+  synergy_queue& operator=(synergy_queue&&) = default;
 
   template <typename T>
   sycl::event submit(T cfg) {
     sycl::event event;
 
-    if (has_target()) {
+    if (has_target()) { // TODO: when the frequency is specified on the queue (per application frequency scaling) for each submit we change the frequency (should be done only once?)
       event = sycl::queue::submit(
           [&](sycl::handler& h) {
             try {
@@ -194,6 +208,70 @@ private:
       throw std::runtime_error("synergy::queue error: queue must be constructed with the in_order property");
 #endif
   }
+};
+
+class phase_aware_queue : public synergy_queue {
+private:
+  std::vector<belated_kernel> kernels;
+
+protected:
+  using synergy_queue::submit;
+
+  void readFile(std::string fname) { // TODO: implement
+    for (auto& kernel : kernels) {
+      kernel.set_best_core_frequency(0);
+      kernel.set_actual_core_frequency(0);
+
+    }
+  }
+
+public:
+  using synergy_queue::synergy_queue;
+
+  template<typename T>
+  void add(T cgh) {
+    kernels.emplace_back(cgh);
+  }
+
+  std::vector<sycl::event> phases_selection(const synergy::target_metric metric, const std::string filename) {
+    this->readFile(filename);
+
+    synergy::detail::TaskGraphBuilder builder(kernels);
+    auto task_graph = builder.build();
+
+    synergy::detail::phase_manager phase_manager(metric, kernels, task_graph);
+    auto phases = phase_manager.get_phases();
+
+    std::vector<sycl::event> events;
+    for (auto& phase : phases) {
+      for (auto i = phase.start; i < phase.end; i++) {
+        if (i == phase.start) {
+          events.push_back(synergy_queue::submit(0, phase.target_freq, kernels[i].cgh));
+        } else {
+          events.push_back(synergy_queue::submit(kernels[i].cgh));
+        }
+      }
+    }
+    kernels.clear();
+    return events;
+  }
+};
+
+} // namespace detail
+
+template<property::queue_mode Mode = property::queue_mode::standard>
+class queue;
+
+template<>
+class queue<property::queue_mode::phase_aware> : public detail::phase_aware_queue {
+public:
+  using detail::phase_aware_queue::phase_aware_queue;
+};
+
+template<>
+class queue<property::queue_mode::standard> : public detail::synergy_queue {
+public:
+  using detail::synergy_queue::synergy_queue;
 };
 
 } // namespace synergy
