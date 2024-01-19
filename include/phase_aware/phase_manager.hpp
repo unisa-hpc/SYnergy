@@ -40,7 +40,6 @@ private:
   float freq_change_overhead = 1.0f; // TODO understand this value
   std::vector<belated_kernel>& kernels;
   synergy::detail::task_graph_t& task_graph;
-  bool consistent = true;
 
 protected:
 
@@ -175,9 +174,8 @@ protected:
 
   /**
    * @brief Calculates the overhead of a frequency change.
-   * @todo Understand how to calculate the overhead.
    */
-  void compute_overhead() {
+  void compute_overhead() { // TODO: Understand how to calculate the overhead.
     this->freq_change_overhead = 1.0f;
   }
 
@@ -193,9 +191,6 @@ public:
    * @return A vector of phase_t objects representing the phases.
    */
   std::vector<phase_t> get_phases() {
-    // set the consistency to false in order to avoid adding kernels after the phases are calculated
-    consistent = false;
-
     // compute the overhead of a frequency change
     compute_overhead();
 
@@ -219,19 +214,6 @@ public:
   }
 
   /**
-   * @brief Adds a kernel to the phase manager.
-   * @details This function is used to add a kernel to the phase manager.
-   * @param kernel The kernel to be added.
-   * @throw std::runtime_error if the phase manager is not consistent.
-  */
-  inline void add_kernel(belated_kernel kernel) {
-    if (!consistent) {
-      throw std::runtime_error("synergy::phase_manager error: cannot add kernel to inconsistent phase manager");
-    }
-    kernels.push_back(kernel);
-  }
-
-  /**
    * @brief Get the kernels.
    *
    * This function returns a constant reference to the vector of belated_kernel objects.
@@ -240,25 +222,6 @@ public:
    */
   inline const std::vector<belated_kernel>& get_kernels() const {
     return kernels;
-  }
-
-  /**
-   * @brief Checks if the phase manager is consistent.
-   * @return A boolean value representing the consistency of the phase manager.
-  */
-  inline const bool is_consistent() const {
-    return consistent;
-  }
-
-  /**
-   * @brief Flushes any pending changes in the phase manager.
-   * 
-   * This function is responsible for flushing any pending changes in the phase manager.
-   * It ensures that all changes made to the phase manager are applied and reflected in the system.
-   */
-  inline void flush() {
-    kernels.clear();
-    consistent = true;
   }
 };
 
