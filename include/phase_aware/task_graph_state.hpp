@@ -5,58 +5,12 @@
 #include "buffer.hpp"
 #include "accessor.hpp"
 #include "belated_kernel.hpp"
-
-namespace sycl_ext = sycl::ext::oneapi::experimental;
-
 namespace synergy {
 namespace detail {
-
 struct dependency_t {
   uint64_t buffer_id;
   sycl::access::mode mode;
 };
-
-class TaskGraphState {
-private:
-  static TaskGraphState* _instance;
-public:
-  static TaskGraphState* getInstance() {
-    if (_instance == nullptr) {
-      _instance = new TaskGraphState();
-    }
-    return _instance;
-  }
-
-protected:
-  std::vector<std::vector<dependency_t>> dependencies;
-  size_t current_kernel = 0;
-
-public:
-  void next_kernel() {
-    _instance->dependencies.push_back(std::vector<dependency_t>());
-    _instance->current_kernel = dependencies.size() - 1;
-  }
-
-  void add_dependency(size_t kernel_id, uint64_t buffer_id, sycl::access::mode mode) {
-    _instance->dependencies[kernel_id].push_back({buffer_id, mode});
-  }
-
-  void add_dependency(uint64_t buffer_id, sycl::access::mode mode) {
-    _instance->dependencies[_instance->current_kernel].push_back({buffer_id, mode});
-  }
-
-  void clear_state() {
-    _instance->dependencies.clear();
-    _instance->current_kernel = 0;
-  }
-
-  const std::vector<std::vector<dependency_t>>& get_dependencies() const {
-    return _instance->dependencies;
-  }
-};
-
-synergy::detail::TaskGraphState* synergy::detail::TaskGraphState::_instance = nullptr;
-
 struct node_t {
   size_t id;
   belated_kernel& kernel;
@@ -65,6 +19,11 @@ struct node_t {
 struct edge_t {
   node_t& src;
   node_t& dst;
+};
+
+struct task_graph_t {
+  std::vector<node_t> nodes;
+  std::vector<edge_t> edges;
 };
 
 class TaskGraphBuilder {
@@ -79,7 +38,7 @@ protected:
    * Identifies the dependencies between tasks in the task graph.
    */
   void identify_dependencies() {
-    auto task_graph = detail::TaskGraphState::getInstance();
+    namespace sycl_ext = sycl::ext::oneapi::experimental;
 
     sycl::queue q;
     sycl_ext::command_graph<sycl_ext::graph_state::modifiable> cg(q.get_context(), q.get_device(), {sycl_ext::property::graph::assume_buffer_outlives_graph{}});
@@ -87,35 +46,50 @@ protected:
 
     for (size_t i = 0; i < kernels.size(); i++) {
       auto& kernel = kernels[i];
-      task_graph->next_kernel();
       nodes.push_back({i, kernel});
-      q.submit(kernel.cgh);  
+      q.submit(kernel.cgh);
     }
 
     cg.end_recording(q);
+    cg.print_graph("./graph.dot");
   }
 
   /**
    * @brief Compute the graph structure
    * @details This function computes the graph structure by comparing the dependencies of each kernel
-   * @todo This function doesn't consider the access mode of the accessors; it can be improved by considering the access mode
   */
   void compute_graph_structure() {
-    auto task_graph = detail::TaskGraphState::getInstance();
+    std::vector<std::pair<int, int>> unparsed_edges;
+    std::vector<int> unparsed_nodes;
 
-    auto dependencies = task_graph->get_dependencies();
-    for (size_t i = 0; i < dependencies.size(); i++) {
-      auto& kernel = dependencies[i];
-      for (auto& dependency : kernel) {
-        for (size_t j = i + 1; j < dependencies.size(); j++) {
-          auto& other_kernel = dependencies[j];
-          for (auto& other_dependency : other_kernel) {
-            if (dependency.buffer_id == other_dependency.buffer_id) {
-              edges.push_back({nodes[i], nodes[j]});
-            }
-          }
-        }
+    // read from file called graph.dot
+    std::ifstream graph_file("./graph.dot");
+    for (std::string line; std::getline(graph_file, line);) {
+      if (line.find("->") != std::string::npos) {
+        std::string src = line.substr(0, line.find("->"));
+        std::string dst = line.substr(line.find("->") + 2, line.find(";") - line.find("->") - 2);
+        src.erase(std::remove(src.begin(), src.end(), ' '), src.end());
+        dst.erase(std::remove(dst.begin(), dst.end(), ' '), dst.end());
+        src.erase(std::remove(src.begin(), src.end(), '"'), src.end());
+        dst.erase(std::remove(dst.begin(), dst.end(), '"'), dst.end());
+        int src_id = std::stoi(src, nullptr, 16);
+        int dst_id = std::stoi(dst, nullptr, 16);
+        unparsed_edges.push_back({src_id, dst_id});
+        unparsed_nodes.push_back(src_id);
+        unparsed_nodes.push_back(dst_id);
       }
+    }
+
+    std::sort(unparsed_nodes.begin(), unparsed_nodes.end());
+    unparsed_nodes.erase(std::unique(unparsed_nodes.begin(), unparsed_nodes.end()), unparsed_nodes.end());
+
+    std::map<int, uint64_t> node_map;
+    for (size_t i = 0; i < unparsed_nodes.size(); i++) {
+      node_map[unparsed_nodes[i]] = i;
+    }
+
+    for (auto& edge : unparsed_edges) {
+      edges.push_back({nodes[node_map[edge.first]], nodes[node_map[edge.second]]});
     }
   }
 
@@ -125,13 +99,14 @@ public:
   /**
    * @brief Builds the task graph state.
    */
-  inline void build() {
+  inline task_graph_t build() {
     if (consistent) {
-      return;
+      return {nodes, edges};
     }
     identify_dependencies();
     compute_graph_structure();
     consistent = true;
+    return {nodes, edges};
   }
 
   inline const std::vector<belated_kernel>& get_kernels() const {
