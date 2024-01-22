@@ -11,7 +11,7 @@ int main() {
   std::vector<int> b(N, 3);
   std::vector<int> c(N, 0);
 
-  synergy::queue<synergy::property::queue_mode::phase_aware> q {sycl::gpu_selector_v};
+  synergy::phase_aware::queue q {sycl::gpu_selector_v};
 
   sycl::buffer<int, 1> bufA(a.data(), a.size());
   bufA.set_write_back(false);

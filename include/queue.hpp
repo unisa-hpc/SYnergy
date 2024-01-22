@@ -259,19 +259,10 @@ public:
 
 } // namespace detail
 
-template<property::queue_mode Mode = property::queue_mode::standard>
-class queue;
+namespace phase_aware {
+  using queue = detail::phase_aware_queue;
+}
 
-template<>
-class queue<property::queue_mode::phase_aware> : public detail::phase_aware_queue {
-public:
-  using detail::phase_aware_queue::phase_aware_queue;
-};
-
-template<>
-class queue<property::queue_mode::standard> : public detail::synergy_queue {
-public:
-  using detail::synergy_queue::synergy_queue;
-};
+using queue = detail::synergy_queue;
 
 } // namespace synergy

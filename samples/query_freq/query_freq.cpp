@@ -9,7 +9,7 @@ int gpu_backend_selector(const sycl::device& d) {
 }
 
 int main() {
-  synergy::queue<> q{gpu_backend_selector};
+  synergy::queue q{gpu_backend_selector};
 
   auto device = q.get_synergy_device();
   auto mem_freq = device.supported_uncore_frequencies();
