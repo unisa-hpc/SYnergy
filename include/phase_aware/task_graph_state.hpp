@@ -21,14 +21,9 @@ struct edge_t {
   node_t& dst;
 };
 
-struct task_graph_t {
-  std::vector<node_t> nodes;
-  std::vector<edge_t> edges;
-};
-
-class task_graph_builder {
+class task_graph {
 private:
-  std::vector<belated_kernel>& kernels;
+  std::vector<belated_kernel> kernels;
   std::vector<node_t> nodes;
   std::vector<edge_t> edges;
   bool consistent = false;
@@ -46,7 +41,6 @@ protected:
 
     for (size_t i = 0; i < kernels.size(); i++) {
       auto& kernel = kernels[i];
-      nodes.push_back({i, kernel});
       q.submit(kernel.cgh);
     }
 
@@ -94,44 +88,72 @@ protected:
   }
 
 public:
-  task_graph_builder(std::vector<belated_kernel>& kernels) : kernels(kernels) {}
+  task_graph() = default;
 
   /**
-   * @brief Builds the task graph state.
+   * @brief Builds the dependencies for the task graph state.
    */
-  inline task_graph_t build() {
-    if (consistent) {
-      return {nodes, edges};
-    }
+  inline void build_dependencies() {
     identify_dependencies();
     compute_graph_structure();
     consistent = true;
-    return {nodes, edges};
   }
 
-  inline const std::vector<belated_kernel>& get_kernels() const {
+  /**
+   * Adds a belated_kernel to the task graph state.
+   *
+   * @param kernel The belated_kernel to be added.
+   */
+  template <typename T>
+  void add(T cgh) {
+    kernels.emplace_back(cgh);
+    node_t node {kernels.size() - 1, kernels.back()};
+    nodes.push_back(node);
+  }
+
+  /**
+   * Returns a reference to the vector of belated kernels.
+   *
+   * @return A reference to the vector of belated kernels.
+   */
+  inline std::vector<belated_kernel>& get_kernels() {
     return kernels;
   }
 
+  /**
+   * Returns a vector of node_t objects representing the nodes in the task graph state.
+   *
+   * @return A vector of node_t objects.
+   */
   inline std::vector<node_t> get_nodes() const {
     if (!consistent) {
-      throw std::runtime_error("synergy::detail::task_graph_builder error: you must call build() before getting the nodes");
+      throw std::runtime_error("synergy::detail::task_graph_builder error: you must call build_dependencies() before getting the nodes");
     }
     return nodes;
   }
 
+  /**
+   * Returns a vector of edges in the task graph state.
+   *
+   * @return A vector of edges.
+   */
   inline std::vector<edge_t> get_edges() const {
     if (!consistent) {
-      throw std::runtime_error("synergy::detail::task_graph_builder error: you must call build() before getting the edges");
+      throw std::runtime_error("synergy::detail::task_graph_builder error: you must call build_dependencies() before getting the edges");
     }
     return edges;
   }
 
-  inline std::vector<node_t> get_topological_order() const {
+  /**
+   * Returns a vector of node indices in topological order.
+   *
+   * @return A vector of node indices in topological order.
+   */
+  inline std::vector<size_t> get_toporder_nodes() {
     if (!consistent) {
-      throw std::runtime_error("synergy::detail::task_graph_builder error: you must call build() before getting the topological order");
+      throw std::runtime_error("synergy::detail::task_graph_builder error: you must call build_dependencies() before getting the topological order");
     }
-    std::vector<node_t> topological_order;
+    std::vector<size_t> topological_order;
     std::vector<bool> visited(nodes.size(), false);
     std::function<void(size_t)> dfs = [&](size_t node_id) {
       visited[node_id] = true;
@@ -140,18 +162,28 @@ public:
           dfs(edge.dst.id);
         }
       }
-      topological_order.push_back(nodes[node_id]);
+      topological_order.push_back(node_id);
     };
     for (size_t i = 0; i < nodes.size(); i++) {
       if (!visited[i]) {
         dfs(i);
       }
     }
-    std::vector<node_t> ret;
-    for (int i = topological_order.size() - 1; i >= 0; i--) {
-      ret.push_back(topological_order[i]);
-    }
-    return ret;
+    std::reverse(topological_order.begin(), topological_order.end());
+    return topological_order;
+  };
+
+  /**
+   * @brief Clears the task graph state.
+   *
+   * This function clears the task graph state, resetting it to its initial state.
+   * It does not throw any exceptions and is noexcept.
+   */
+  inline void clear() noexcept {
+    kernels.clear();
+    nodes.clear();
+    edges.clear();
+    consistent = false;
   }
 };
 

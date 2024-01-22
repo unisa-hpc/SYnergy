@@ -38,8 +38,8 @@ class phase_manager {
 private:
   target_metric metric;
   float freq_change_overhead = 1.0f; // TODO understand this value
-  std::vector<belated_kernel>& kernels;
-  synergy::detail::task_graph_t& task_graph;
+  synergy::detail::task_graph& task_graph;
+  std::vector<belated_kernel> kernels;
 
 protected:
 
@@ -181,9 +181,10 @@ protected:
 
 public:
   phase_manager(target_metric metric, 
-                std::vector<belated_kernel>& kernels, 
-                synergy::detail::task_graph_t& task_graph) : 
-                  metric{metric}, kernels{kernels}, task_graph{task_graph} {}
+                synergy::detail::task_graph& task_graph) : 
+                  metric{metric}, task_graph{task_graph} {
+    kernels = task_graph.get_kernels();
+  }
 
   /**
    * Retrieves the phases.
@@ -203,25 +204,16 @@ public:
       change_points.insert(change.index);
     }
     for (auto& change : change_points) {
-      phases.push_back({
+      auto end = change + 1;
+      auto target_freq = this->find_best_frequency(kernels.begin() + start, kernels.begin() + end);
+      phases.push_back(synergy::detail::phase_t{
         .start = start,
-        .end = change + 1,
-        .target_freq = this->find_best_frequency(kernels.begin() + start, kernels.begin() + change)
+        .end = end,
+        .target_freq = target_freq
       });
       start = change + 1;
     }
     return phases;
-  }
-
-  /**
-   * @brief Get the kernels.
-   *
-   * This function returns a constant reference to the vector of belated_kernel objects.
-   *
-   * @return A constant reference to the vector of belated_kernel objects.
-   */
-  inline const std::vector<belated_kernel>& get_kernels() const {
-    return kernels;
   }
 };
 

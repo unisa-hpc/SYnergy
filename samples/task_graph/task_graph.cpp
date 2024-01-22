@@ -44,7 +44,9 @@ int main() {
     });
   });
 
-  q.phases_selection(synergy::target_metric::UNDEFINED, "task_graph.dot");
+  auto phases = q.phases_selection(synergy::target_metric::UNDEFINED, "task_graph.dot");
+  auto events = q.execute(phases);
+  q.wait_and_throw();
 
   sycl::host_accessor<int, 1, sycl::access_mode::read_write> accC(bufC);
   for (size_t i = 0; i < N; ++i) {

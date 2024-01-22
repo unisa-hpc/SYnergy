@@ -212,13 +212,13 @@ private:
 
 class phase_aware_queue : public synergy_queue {
 private:
-  std::vector<belated_kernel> kernels;
+  task_graph task_graph;
 
 protected:
   using synergy_queue::submit;
 
-  void readFile(std::string fname) { // TODO: implement
-    for (auto& kernel : kernels) {
+  void read_file(std::string fname) { // TODO: implement
+    for (auto& kernel : task_graph.get_kernels()) {
       kernel.set_best_core_frequency(0);
       kernel.set_actual_core_frequency(0);
 
@@ -230,18 +230,28 @@ public:
 
   template<typename T>
   void add(T cgh) {
-    kernels.emplace_back(cgh);
+    task_graph.add(cgh);
   }
 
-  std::vector<sycl::event> phases_selection(const synergy::target_metric metric, const std::string filename) {
-    this->readFile(filename);
+  std::vector<phase_t> phases_selection(const synergy::target_metric metric, const std::string filename) {
+    this->read_file(filename);
 
-    synergy::detail::task_graph_builder builder(kernels);
-    auto task_graph = builder.build();
+    task_graph.build_dependencies();
 
-    synergy::detail::phase_manager phase_manager(metric, kernels, task_graph);
-    auto phases = phase_manager.get_phases();
+    // synergy::detail::phase_manager phase_manager(metric, task_graph);
+    // auto phases = phase_manager.get_phases(); 
 
+    // return phases;
+    return {};
+  }
+
+  /**
+   * @brief Executes the kernels in the queue.
+   * @param phases The phases to execute.
+   * @return A vector of events.
+  */
+  std::vector<sycl::event> execute(const std::vector<phase_t>& phases) {
+    auto kernels = task_graph.get_kernels();
     std::vector<sycl::event> events;
     for (auto& phase : phases) {
       for (auto i = phase.start; i < phase.end; i++) {
@@ -252,7 +262,6 @@ public:
         }
       }
     }
-    kernels.clear();
     return events;
   }
 };
