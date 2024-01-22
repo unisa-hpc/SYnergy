@@ -26,7 +26,7 @@ struct task_graph_t {
   std::vector<edge_t> edges;
 };
 
-class TaskGraphBuilder {
+class task_graph_builder {
 private:
   std::vector<belated_kernel>& kernels;
   std::vector<node_t> nodes;
@@ -94,7 +94,7 @@ protected:
   }
 
 public:
-  TaskGraphBuilder(std::vector<belated_kernel>& kernels) : kernels(kernels) {}
+  task_graph_builder(std::vector<belated_kernel>& kernels) : kernels(kernels) {}
 
   /**
    * @brief Builds the task graph state.
@@ -115,21 +115,21 @@ public:
 
   inline std::vector<node_t> get_nodes() const {
     if (!consistent) {
-      throw std::runtime_error("synergy::detail::TaskGraphBuilder error: you must call build() before getting the nodes");
+      throw std::runtime_error("synergy::detail::task_graph_builder error: you must call build() before getting the nodes");
     }
     return nodes;
   }
 
   inline std::vector<edge_t> get_edges() const {
     if (!consistent) {
-      throw std::runtime_error("synergy::detail::TaskGraphBuilder error: you must call build() before getting the edges");
+      throw std::runtime_error("synergy::detail::task_graph_builder error: you must call build() before getting the edges");
     }
     return edges;
   }
 
   inline std::vector<node_t> get_topological_order() const {
     if (!consistent) {
-      throw std::runtime_error("synergy::detail::TaskGraphBuilder error: you must call build() before getting the topological order");
+      throw std::runtime_error("synergy::detail::task_graph_builder error: you must call build() before getting the topological order");
     }
     std::vector<node_t> topological_order;
     std::vector<bool> visited(nodes.size(), false);

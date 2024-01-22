@@ -236,7 +236,7 @@ public:
   std::vector<sycl::event> phases_selection(const synergy::target_metric metric, const std::string filename) {
     this->readFile(filename);
 
-    synergy::detail::TaskGraphBuilder builder(kernels);
+    synergy::detail::task_graph_builder builder(kernels);
     auto task_graph = builder.build();
 
     synergy::detail::phase_manager phase_manager(metric, kernels, task_graph);
