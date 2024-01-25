@@ -44,10 +44,7 @@ elif [[ "$arch" = "cuda" ]]; then
   # read frequencies with nvidia-smi
   output=$(nvidia-smi -q -d SUPPORTED_CLOCKS)
   # find min and max frequencies
-  frequencies=$(echo "$output" | grep "Graphics" | awk '{print $3}')
-
-  # trim leading whitespace
-  frequencies=$(echo "$frequencies" | sed -e 's/^[[:space:]]*//')
+  frequencies=$(nvidia-smi -i 0 --query-supported-clocks=gr --format=csv,noheader,nounits)
 
   nvsmi_out=$(nvidia-smi  -q | grep "Default Applications Clocks" -A 2 | tail -n +2)
   def_core=$(echo $nvsmi_out | awk '{print $3}')
