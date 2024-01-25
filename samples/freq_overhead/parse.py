@@ -1,0 +1,76 @@
+import re
+import pandas as pd
+import sys
+
+def parse_log_file_refined(file_path):
+    # Define regex patterns for extracting data
+    freq_pattern = re.compile(r'\[\*\] Running benchmark for frequency (\d+)')
+    type_pattern = re.compile(r'(Non-setting|Setting) frequency\.\.\.')
+    time_value_pattern = re.compile(r'device-time\[ms\]: \[ (.+) \]')
+    energy_value_pattern = re.compile(r'device-energy\[j\]: \[ (.+) \]')
+    host_energy_value_pattern = re.compile(r'host-energy\[j\]: \[ (.+) \]')
+    avg_pattern = re.compile(r'(.+)-avg\[(ms|j)\]: ([\d.]+)')
+    stdev_pattern = re.compile(r'(.+)-stdev\[(ms|j)\]: ([\d.]+)')
+    max_pattern = re.compile(r'(.+)-max\[(ms|j)\]: ([\d.]+)')
+    min_pattern = re.compile(r'(.+)-min\[(ms|j)\]: ([\d.]+)')
+    median_pattern = re.compile(r'(.+)-median\[(ms|j)\]: ([\d.]+)')
+
+    # Initialize variables to store the parsed data
+    data = {}
+    current_freq = None
+
+    with open(file_path, 'r') as file:
+        for line in file:
+            # Check for frequency
+            freq_match = freq_pattern.match(line)
+            if freq_match:
+                current_freq = int(freq_match.group(1))
+                if current_freq not in data:
+                    data[current_freq] = {}
+                continue
+
+            # Check for frequency type
+            type_match = type_pattern.match(line)
+            if type_match:
+                current_type = type_match.group(1).replace('-', '').lower()  # 'NonSetting' or 'Setting'
+                continue
+
+            # Extract and store data
+            if current_freq is not None:
+                prefix = f'{current_type}_'
+                time_value_match = time_value_pattern.match(line)
+                energy_value_match = energy_value_pattern.match(line)
+                host_energy_value_match = host_energy_value_pattern.match(line)
+
+                # For device-time, device-energy, and host-energy
+                for match, metric in zip([time_value_match, energy_value_match, host_energy_value_match], 
+                                         ['device_time', 'device_energy', 'host_energy']):
+                    if match:
+                        # Extract other statistics
+                        for _ in range(5):
+                            stat_line = next(file)
+                            avg_match = avg_pattern.match(stat_line)
+                            if avg_match:
+                                data[current_freq][f'{prefix}{metric}_Average'] = float(avg_match.group(3))
+                            stdev_match = stdev_pattern.match(stat_line)
+                            if stdev_match:
+                                data[current_freq][f'{prefix}{metric}_Stdev'] = float(stdev_match.group(3))
+                            max_match = max_pattern.match(stat_line)
+                            if max_match:
+                                data[current_freq][f'{prefix}{metric}_Max'] = float(max_match.group(3))
+                            min_match = min_pattern.match(stat_line)
+                            if min_match:
+                                data[current_freq][f'{prefix}{metric}_Min'] = float(min_match.group(3))
+                            median_match = median_pattern.match(stat_line)
+                            if median_match:
+                                data[current_freq][f'{prefix}{metric}_Median'] = float(median_match.group(3))
+
+    return pd.DataFrame.from_dict(data, orient='index')
+
+if __name__ == '__main__':
+    # Get the path to the log file
+    file_path = sys.argv[1]
+    # Parse the log file with the refined approach
+    refined_dataset = parse_log_file_refined(file_path)
+    refined_dataset.head()
+    refined_dataset.to_csv('refined_dataset.csv')
