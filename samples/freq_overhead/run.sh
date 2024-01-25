@@ -72,3 +72,9 @@ for freq in $frequencies; do
   echo "Setting frequency..."
   $SCRIPT_DIR/freq_overhead $freq
 done
+
+if [[ "$arch" = "intel" ]]; then
+  intel_gpu_frequency -d
+elif [[ "$arch" = "cuda" ]]; then
+  nvidia-smi -rac
+fi
