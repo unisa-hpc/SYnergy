@@ -1,13 +1,15 @@
 #!/bin/bash
 
-SUPPORTED_ARCHS=" intel "
-arch="intel"
+SUPPORTED_ARCHS=" intel cuda "
+arch="cuda"
 frequencies=""
+def_core=""
+def_mem=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --arch=*)
-      arch="${1#*=} "
+      arch="${1#*=}"
       shift
       ;;
     *)
@@ -26,7 +28,7 @@ if [[ $SUPPORTED_ARCHS != *"$arch"* ]]; then
   exit 1
 fi
 
-if [[ $arch == "intel" ]]; then
+if [[ "$arch" = "intel" ]]; then
   intel_gpu_frequency -d
   output=$(intel_gpu_frequency)
   # find min and max frequencies
@@ -38,18 +40,34 @@ if [[ $arch == "intel" ]]; then
   done
   # trim leading whitespace
   frequencies=$(echo "$frequencies" | sed -e 's/^[[:space:]]*//')
+elif [[ "$arch" = "cuda" ]]; then
+  # read frequencies with nvidia-smi
+  output=$(nvidia-smi -q -d SUPPORTED_CLOCKS)
+  # find min and max frequencies
+  frequencies=$(echo "$output" | grep "Graphics" | awk '{print $3}')
+
+  # trim leading whitespace
+  frequencies=$(echo "$frequencies" | sed -e 's/^[[:space:]]*//')
+
+  nvsmi_out=$(nvidia-smi  -q | grep "Default Applications Clocks" -A 2 | tail -n +2)
+  def_core=$(echo $nvsmi_out | awk '{print $3}')
+  def_mem=$(echo $nvsmi_out | awk '{print $7}')
 fi
 
 # run the benchmark for each frequency
 for freq in $frequencies; do
   echo "[*] Running benchmark for frequency $freq"
-  if [[ $arch == "intel" ]]; then
+  if [[ "$arch" = "intel" ]]; then
     intel_gpu_frequency --set $freq
+  elif [[ "$arch" = "cuda" ]]; then
+    nvidia-smi -ac $def_mem,$freq > /dev/null
   fi
   echo "Non-setting frequency..."
   $SCRIPT_DIR/freq_overhead
-  if [[ $arch == "intel" ]]; then
+  if [[ "$arch" = "intel" ]]; then
     intel_gpu_frequency -d
+  elif [[ "$arch" = "cuda" ]]; then
+    nvidia-smi -rac > /dev/null
   fi
   echo "Setting frequency..."
   $SCRIPT_DIR/freq_overhead $freq
