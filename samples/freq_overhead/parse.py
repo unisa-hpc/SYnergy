@@ -5,7 +5,11 @@ import sys
 def parse_log_file_refined(file_path):
     # Define regex patterns for extracting data
     freq_pattern = re.compile(r'\[\*\] Running benchmark for frequency (\d+)')
-    type_pattern = re.compile(r'(Non-setting|Setting) frequency\.\.\.')
+    type_pattern = re.compile(r'(App|Kernel|Phase) frequency setting\.\.\.')
+    energy_sample_before_pattern = re.compile(r'energy-sample-before\[J\]: ([\d.]+)')
+    energy_sample_after_pattern = re.compile(r'energy-sample-after\[J\]: ([\d.]+)')
+    energy_sample_delta_pattern = re.compile(r'energy-sample-delta\[J\]: ([\d.]+)')
+    energy_sample_time_pattern = re.compile(r'energy-sample-time\[ms\]: ([\d.]+)')
     time_value_pattern = re.compile(r'device-time\[ms\]: \[ (.+) \]')
     energy_value_pattern = re.compile(r'device-energy\[j\]: \[ (.+) \]')
     host_energy_value_pattern = re.compile(r'host-energy\[j\]: \[ (.+) \]')
@@ -26,18 +30,43 @@ def parse_log_file_refined(file_path):
             if freq_match:
                 current_freq = int(freq_match.group(1))
                 if current_freq not in data:
-                    data[current_freq] = {}
+                    data[current_freq] = {'freq': current_freq}
                 continue
 
             # Check for frequency type
             type_match = type_pattern.match(line)
             if type_match:
-                current_type = type_match.group(1).replace('-', '').lower()  # 'NonSetting' or 'Setting'
-                continue
+                current_type = type_match.group(1).lower()  # 'App', 'Kernel' or 'Phase'
+                continue               
 
             # Extract and store data
             if current_freq is not None:
                 prefix = f'{current_type}_'
+                
+                energy_sample_before_match = energy_sample_before_pattern.match(line)
+                if energy_sample_before_match:
+                    energy_sample_before = energy_sample_before_match.group(1)
+                    data[current_freq][f'{prefix}energy_sample_before'] = float(energy_sample_before)
+                    continue
+                
+                energy_sample_after_match = energy_sample_after_pattern.match(line)
+                if energy_sample_after_match:
+                    energy_sample_after = energy_sample_after_match.group(1)
+                    data[current_freq][f'{prefix}energy_sample_after'] = float(energy_sample_after)
+                    continue
+                
+                energy_sample_delta_match = energy_sample_delta_pattern.match(line)
+                if energy_sample_delta_match:
+                    energy_sample_delta = energy_sample_delta_match.group(1)
+                    data[current_freq][f'{prefix}energy_sample_delta'] = float(energy_sample_delta)
+                    continue
+                
+                energy_sample_time_match = energy_sample_time_pattern.match(line)
+                if energy_sample_time_match:
+                    energy_sample_time = energy_sample_time_match.group(1)
+                    data[current_freq][f'{prefix}energy_sample_time'] = float(energy_sample_time)
+                    continue 
+                
                 time_value_match = time_value_pattern.match(line)
                 energy_value_match = energy_value_pattern.match(line)
                 host_energy_value_match = host_energy_value_pattern.match(line)
@@ -64,13 +93,16 @@ def parse_log_file_refined(file_path):
                             median_match = median_pattern.match(stat_line)
                             if median_match:
                                 data[current_freq][f'{prefix}{metric}_Median'] = float(median_match.group(3))
-
+    
     return pd.DataFrame.from_dict(data, orient='index')
 
 if __name__ == '__main__':
+    if len(sys.argv) != 3:
+        print('Usage: python parse.py <input_file_path> <output_file_path>')
+        exit(1)
     # Get the path to the log file
     file_path = sys.argv[1]
+    output_path = sys.argv[2]
     # Parse the log file with the refined approach
     refined_dataset = parse_log_file_refined(file_path)
-    refined_dataset.head()
-    refined_dataset.to_csv('refined_dataset.csv')
+    refined_dataset.to_csv(output_path, index=False)

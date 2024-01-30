@@ -5,11 +5,21 @@ arch="cuda"
 frequencies=""
 def_core=""
 def_mem=""
+num_iters=15
+skip_factor=5
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --arch=*)
       arch="${1#*=}"
+      shift
+      ;;
+    --num-iters=*)
+      num_iters="${1#*=}"
+      shift
+      ;;
+    --skip-factor=*)
+      skip_factor="${1#*=}"
       shift
       ;;
     *)
@@ -19,6 +29,14 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+function reset_freq {
+  if [[ "$arch" = "intel" ]]; then
+    intel_gpu_frequency -d
+  elif [[ "$arch" = "cuda" ]]; then
+    nvidia-smi -rac > /dev/null
+  fi
+}
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
@@ -42,6 +60,8 @@ if [[ "$arch" = "intel" ]]; then
   frequencies=$(echo "$frequencies" | sed -e 's/^[[:space:]]*//')
 elif [[ "$arch" = "cuda" ]]; then
   frequencies=$(nvidia-smi -i 0 --query-supported-clocks=gr --format=csv,noheader,nounits)
+  # get half of the frequencies in the frequency array
+  frequencies=$(echo "$frequencies" | awk '{print $1}' | awk 'NR % 5 == 0')
 
   nvsmi_out=$(nvidia-smi  -q | grep "Default Applications Clocks" -A 2 | tail -n +2)
   def_core=$(echo $nvsmi_out | awk '{print $3}')
@@ -56,19 +76,16 @@ for freq in $frequencies; do
   elif [[ "$arch" = "cuda" ]]; then
     nvidia-smi -ac $def_mem,$freq > /dev/null
   fi
-  echo "Non-setting frequency..."
-  $SCRIPT_DIR/freq_overhead
-  if [[ "$arch" = "intel" ]]; then
-    intel_gpu_frequency -d
-  elif [[ "$arch" = "cuda" ]]; then
-    nvidia-smi -rac > /dev/null
-  fi
-  echo "Setting frequency..."
-  $SCRIPT_DIR/freq_overhead $freq
+  echo "App frequency setting..."
+  $SCRIPT_DIR/freq_overhead $num_iters 1
+  
+  reset_freq
+  echo "Kernel frequency setting..."
+  $SCRIPT_DIR/freq_overhead $num_iters 1 $freq
+  
+  reset_freq
+  echo "Phase frequency setting..."
+  $SCRIPT_DIR/freq_overhead $num_iters $skip_factor $freq
 done
 
-if [[ "$arch" = "intel" ]]; then
-  intel_gpu_frequency -d
-elif [[ "$arch" = "cuda" ]]; then
-  nvidia-smi -rac
-fi
+reset_freq
