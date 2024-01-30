@@ -59,23 +59,23 @@ df = data.iloc[::-1]
 bar_width = 0.4
 x = np.arange(len(df['freq'])) * 1.5
 plt.bar(x - bar_width, df['app_device_energy_Median'], width=bar_width, color='blue')
-plt.bar(x - bar_width, df['app_host_energy_Median'], width=bar_width, bottom=df['app_device_energy_Median'], color='o')
+plt.bar(x - bar_width, df['app_host_energy_Median'], width=bar_width, bottom=df['app_device_energy_Median'], color='orange')
 
 plt.bar(x, df['phase_device_energy_Median'], width=bar_width, color='blue', hatch=PHASE_HATCHES)
-plt.bar(x, df['phase_host_energy_Median'], width=bar_width, bottom=df['phase_device_energy_Median'],  hatch=PHASE_HATCHES, color='o')
+plt.bar(x, df['phase_host_energy_Median'], width=bar_width, bottom=df['phase_device_energy_Median'],  hatch=PHASE_HATCHES, color='orange')
 
 plt.bar(x + bar_width, df['kernel_device_energy_Median'], width=bar_width, color='blue', hatch=KERNEL_HATCHES)
-plt.bar(x + bar_width, df['kernel_host_energy_Median'], width=bar_width, bottom=df['kernel_device_energy_Median'],  hatch=KERNEL_HATCHES, color='o')
+plt.bar(x + bar_width, df['kernel_host_energy_Median'], width=bar_width, bottom=df['kernel_device_energy_Median'],  hatch=KERNEL_HATCHES, color='orange')
 
 
-legend_colors = [Patch(facecolor='blue', label='Device'), Patch(facecolor='o', label='Host')]
+legend_colors = [Patch(facecolor='blue', label='Device'), Patch(facecolor='orange', label='Host')]
 legend_hatches = [
                   Patch(facecolor='blue', edgecolor='w', hatch=KERNEL_HATCHES, label=''), 
                   Patch(facecolor='blue', edgecolor='w', hatch=PHASE_HATCHES, label=''), 
                   Patch(facecolor='blue', label=''),
-                  Patch(facecolor='o', edgecolor='w', hatch=KERNEL_HATCHES, label='Kernel'), 
-                  Patch(facecolor='o', edgecolor='w', hatch=PHASE_HATCHES, label='Phase'), 
-                  Patch(facecolor='o', label='Application'),
+                  Patch(facecolor='orange', edgecolor='w', hatch=KERNEL_HATCHES, label='Kernel'), 
+                  Patch(facecolor='orange', edgecolor='w', hatch=PHASE_HATCHES, label='Phase'), 
+                  Patch(facecolor='orange', label='Application'),
                 ]
 
 legend1 = plt.legend(handles=legend_colors, title='Energy Consumption', loc='center right', bbox_to_anchor=(0.8, 0.8))
