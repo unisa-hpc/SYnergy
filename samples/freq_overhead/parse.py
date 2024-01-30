@@ -11,13 +11,13 @@ def parse_log_file_refined(file_path):
     energy_sample_delta_pattern = re.compile(r'energy-sample-delta\[J\]: ([\d.]+)')
     energy_sample_time_pattern = re.compile(r'energy-sample-time\[ms\]: ([\d.]+)')
     time_value_pattern = re.compile(r'device-time\[ms\]: \[ (.+) \]')
-    energy_value_pattern = re.compile(r'device-energy\[j\]: \[ (.+) \]')
-    host_energy_value_pattern = re.compile(r'host-energy\[j\]: \[ (.+) \]')
-    avg_pattern = re.compile(r'(.+)-avg\[(ms|j)\]: ([\d.]+)')
-    stdev_pattern = re.compile(r'(.+)-stdev\[(ms|j)\]: ([\d.]+)')
-    max_pattern = re.compile(r'(.+)-max\[(ms|j)\]: ([\d.]+)')
-    min_pattern = re.compile(r'(.+)-min\[(ms|j)\]: ([\d.]+)')
-    median_pattern = re.compile(r'(.+)-median\[(ms|j)\]: ([\d.]+)')
+    device_energy_value_pattern = re.compile(r'device-energy\[J\]: \[ (.+) \]')
+    host_energy_value_pattern = re.compile(r'host-energy\[J\]: \[ (.+) \]')
+    avg_pattern = re.compile(r'(.+)-avg\[(ms|J)\]: ([\d.]+)')
+    stdev_pattern = re.compile(r'(.+)-stdev\[(ms|J)\]: ([\d.]+)')
+    max_pattern = re.compile(r'(.+)-max\[(ms|J)\]: ([\d.]+)')
+    min_pattern = re.compile(r'(.+)-min\[(ms|J)\]: ([\d.]+)')
+    median_pattern = re.compile(r'(.+)-median\[(ms|J)\]: ([\d.]+)')
 
     # Initialize variables to store the parsed data
     data = {}
@@ -68,11 +68,11 @@ def parse_log_file_refined(file_path):
                     continue 
                 
                 time_value_match = time_value_pattern.match(line)
-                energy_value_match = energy_value_pattern.match(line)
+                device_energy_value_match = device_energy_value_pattern.match(line)
                 host_energy_value_match = host_energy_value_pattern.match(line)
 
                 # For device-time, device-energy, and host-energy
-                for match, metric in zip([time_value_match, energy_value_match, host_energy_value_match], 
+                for match, metric in zip([time_value_match, device_energy_value_match, host_energy_value_match], 
                                          ['device_time', 'device_energy', 'host_energy']):
                     if match:
                         # Extract other statistics
