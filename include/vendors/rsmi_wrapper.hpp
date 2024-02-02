@@ -58,10 +58,9 @@ public:
   inline std::vector<frequency> get_supported_core_frequencies(rsmi::device_handle handle) const {
     rsmi_frequencies_t core;
     check(rsmi_dev_gpu_clk_freq_get(handle, RSMI_CLK_TYPE_SYS, &core));
-
     std::vector<frequency> frequencies(core.num_supported);
     for (size_t i = 0; i < core.num_supported; i++)
-      frequencies[i] = core.frequency[i];
+      frequencies[i] = core.frequency[i] / 1e6;
 
     return frequencies;
   }
@@ -72,7 +71,7 @@ public:
 
     std::vector<frequency> frequencies(uncore.num_supported);
     for (size_t i = 0; i < uncore.num_supported; i++)
-      frequencies[i] = uncore.frequency[i];
+      frequencies[i] = uncore.frequency[i] / 1e6;
 
     return frequencies;
   }
@@ -80,43 +79,49 @@ public:
   inline frequency get_core_frequency(rsmi::device_handle handle) const {
     rsmi_frequencies_t core;
     check(rsmi_dev_gpu_clk_freq_get(handle, RSMI_CLK_TYPE_SYS, &core));
-    return core.frequency[core.current];
+    return core.frequency[core.current] / 1e6;
   }
 
   inline frequency get_uncore_frequency(rsmi::device_handle handle) const {
     rsmi_frequencies_t uncore;
     check(rsmi_dev_gpu_clk_freq_get(handle, RSMI_CLK_TYPE_MEM, &uncore));
-    return uncore.frequency[uncore.current];
+    return uncore.frequency[uncore.current] / 1e6;
   }
 
   inline void set_core_frequency(rsmi::device_handle handle, frequency target) const {
     rsmi_frequencies_t core;
     check(rsmi_dev_gpu_clk_freq_get(handle, RSMI_CLK_TYPE_SYS, &core));
+    // the AMD freqs are in Hz while target are in MHz
+    target *= 1e6;
 
     int target_index = -1;
-    for (size_t i = 0; i < core.num_supported && target_index == -1; i++)
+    for (size_t i = 0; i < core.num_supported && target_index == -1; i++) {
       if (core.frequency[i] == target)
         target_index = i;
+    }
 
     if (target_index == -1)
       return; // silent fail, must handle better
 
-    check(rsmi_dev_gpu_clk_freq_set(handle, RSMI_CLK_TYPE_SYS, make_bitmask(core.num_supported, target_index)));
+    check(rsmi_dev_gpu_clk_freq_set(handle, RSMI_CLK_TYPE_SYS, make_bitmask(target_index)));
   }
 
   inline void set_uncore_frequency(rsmi::device_handle handle, frequency target) const {
     rsmi_frequencies_t uncore;
     check(rsmi_dev_gpu_clk_freq_get(handle, RSMI_CLK_TYPE_MEM, &uncore));
-
+    target *= 1e6;
     int target_index = -1;
     for (size_t i = 0; i < uncore.num_supported && target_index == -1; i++)
       if (uncore.frequency[i] == target)
         target_index = i;
 
     if (target_index == -1)
-      return; // silent fail, must handle better
+      return; // silent fail, must handle better check(RSMI_STATUS_NOT_SUPPORTED)
 
-    check(rsmi_dev_gpu_clk_freq_set(handle, RSMI_CLK_TYPE_MEM, make_bitmask(uncore.num_supported, target_index)));
+    if (uncore.num_supported == 1) // with only one freqeuncy available there is no need to change the frequency
+      return;
+
+    check(rsmi_dev_gpu_clk_freq_set(handle, RSMI_CLK_TYPE_MEM, make_bitmask(target_index)));
   }
 
   inline void set_all_frequencies(rsmi::device_handle handle, frequency core, frequency uncore) const {
@@ -135,12 +140,8 @@ public:
   }
 
 private:
-  unsigned long make_bitmask(uint32_t num_supported_clocks, uint32_t desired_frequency_index) const {
-    uint64_t freq_bitmask = 1UL;
-    uint32_t shift_amount = num_supported_clocks +
-                            (num_supported_clocks - 1) - desired_frequency_index;
-    freq_bitmask <<= (64 - shift_amount);
-    return freq_bitmask;
+  unsigned long make_bitmask(uint32_t desired_frequency_index) const {
+    return 1UL << desired_frequency_index;
   }
 
 private:
