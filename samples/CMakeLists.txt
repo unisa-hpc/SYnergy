@@ -12,7 +12,7 @@ add_executable(saxpy saxpy/saxpy.cpp)
 add_executable(concurrent_matmul concurrent_matmul/concurrent_matmul.cpp)
 add_executable(freq_scale freq_scale/freq_scale.cpp)
 add_executable(task_graph task_graph/task_graph.cpp)
-add_executable(freq_overhead freq_overhead/freq_overhead.cpp)
+add_executable(freq_overhead freq_overhead/freq_overhead.cpp freq_overhead/bitmap.hpp)
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/run.sh
