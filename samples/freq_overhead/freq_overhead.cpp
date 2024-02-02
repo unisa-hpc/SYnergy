@@ -68,6 +68,7 @@ double matrix_mul(synergy::queue& q,
       });
     });
   }
+  return duration.count();
 }
 
 double sobel(synergy::queue& q, 
