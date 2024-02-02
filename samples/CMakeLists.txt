@@ -32,8 +32,14 @@ add_custom_command(
   DEPENDS ${CMAKE_SOURCE_DIR}/samples/freq_overhead/plot.py
 )
 
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Brommy.bmp
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/samples/freq_overhead/Brommy.bmp ${CMAKE_CURRENT_BINARY_DIR}/Brommy.bmp
+  DEPENDS ${CMAKE_SOURCE_DIR}/samples/freq_overhead/Brommy.pmp
+)
+
 add_custom_target(copy_scripts ALL
-  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/run.sh ${CMAKE_CURRENT_BINARY_DIR}/parse.py ${CMAKE_CURRENT_BINARY_DIR}/plot.py
+  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/run.sh ${CMAKE_CURRENT_BINARY_DIR}/parse.py ${CMAKE_CURRENT_BINARY_DIR}/plot.py ${CMAKE_CURRENT_BINARY_DIR}/Brommy.bmp
 )
 
 get_directory_property(all_targets BUILDSYSTEM_TARGETS)
