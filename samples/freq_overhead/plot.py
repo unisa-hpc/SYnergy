@@ -16,47 +16,40 @@ data = pd.read_csv(file_path)
 df = pd.DataFrame()
 
 df['n_kernels'] = data['n_kernels']
-df['app_device_time'] = data['app_device_time_Median'] - data['app_freq_change_overhead_Max']
-df['app_overhead_time'] = data['app_freq_change_overhead_Max']
-df['phase_device_time'] = data['phase_device_time_Median'] - data['phase_freq_change_overhead_Max']
-df['phase_overhead_time'] = data['phase_freq_change_overhead_Max']
-df['kernel_device_time'] = data['kernel_device_time_Median'] - data['kernel_freq_change_overhead_Max']
-df['kernel_overhead_time'] = data['kernel_freq_change_overhead_Max']
+df['app_total_time'] = data['app_total_time_Average'] - data['app_freq_change_overhead_Average']
+df['app_overhead_time'] = data['app_freq_change_overhead_Average']
+df['phase_total_time'] = data['phase_total_time_Average'] - data['phase_freq_change_overhead_Average']
+df['phase_overhead_time'] = data['phase_freq_change_overhead_Average']
+df['kernel_total_time'] = data['kernel_total_time_Average'] - data['kernel_freq_change_overhead_Average']
+df['kernel_overhead_time'] = data['kernel_freq_change_overhead_Average']
 
 KERNEL_HATCHES = '/////'
-PHASE_HATCHES = '------'
+PHASE_HATCHES = '......'
 
-bar_width = 0.4
-x = np.arange(len(df['n_kernels'])) * 1.5
-plt.bar(x - bar_width, df['app_device_time'], width=bar_width, color='blue')
-plt.bar(x - bar_width, df['app_overhead_time'], width=bar_width, bottom=df['app_device_time'], color='orange')
+bar_width = 0.3
+x = np.arange(len(df['n_kernels']))
+plt.bar(x - bar_width, df['app_total_time'], width=bar_width, color='blue')
+plt.bar(x - bar_width, df['app_overhead_time'], width=bar_width, bottom=df['app_total_time'], color='green')
 
-plt.bar(x, df['phase_device_time'], width=bar_width, color='blue', hatch=PHASE_HATCHES)
-plt.bar(x, df['phase_overhead_time'], width=bar_width, bottom=df['phase_device_time'],  hatch=PHASE_HATCHES, color='orange')
+plt.bar(x, df['phase_total_time'], width=bar_width, color='blue', hatch=PHASE_HATCHES)
+plt.bar(x, df['phase_overhead_time'], width=bar_width, bottom=df['phase_total_time'],  hatch=PHASE_HATCHES, color='green')
 
-plt.bar(x + bar_width, df['kernel_device_time'], width=bar_width, color='blue', hatch=KERNEL_HATCHES)
-plt.bar(x + bar_width, df['kernel_overhead_time'], width=bar_width, bottom=df['kernel_device_time'],  hatch=KERNEL_HATCHES, color='orange')
-
-
-legend_colors = [Patch(facecolor='blue', label='Device'), Patch(facecolor='orange', label='Host')]
-legend_hatches = [
-                  Patch(facecolor='blue', edgecolor='w', hatch=KERNEL_HATCHES, label=''), 
-                  Patch(facecolor='blue', edgecolor='w', hatch=PHASE_HATCHES, label=''), 
-                  Patch(facecolor='blue', label=''),
-                  Patch(facecolor='orange', edgecolor='w', hatch=KERNEL_HATCHES, label='Kernel'), 
-                  Patch(facecolor='orange', edgecolor='w', hatch=PHASE_HATCHES, label='Phase'), 
-                  Patch(facecolor='orange', label='Application'),
-                ]
-
-# legend1 = plt.legend(handles=legend_colors, title='Energy Consumption', loc='center right', bbox_to_anchor=(0.8, 0.8))
-# plt.gca().add_artist(legend1)
-# legend2 = plt.legend(handles=legend_hatches, ncol=2,handletextpad=0.5, handlelength=1.0, columnspacing=-0.5, title='Frequency Setting', loc='upper right')
+plt.bar(x + bar_width, df['kernel_total_time'], width=bar_width, color='blue', hatch=KERNEL_HATCHES)
+plt.bar(x + bar_width, df['kernel_overhead_time'], width=bar_width, bottom=df['kernel_total_time'],  hatch=KERNEL_HATCHES, color='green')
 
 
+legend = [Patch(facecolor='blue', label='Computation Time'), 
+          Patch(facecolor='green', label='Frequency Change Time'),
+          Patch(facecolor='none', edgecolor='k', label='Per App Frequency Change'),
+          Patch(facecolor='none', edgecolor='k', hatch=PHASE_HATCHES, label='Per Phase Frequency Change'),
+          Patch(facecolor='none', edgecolor='k', hatch=KERNEL_HATCHES, label='Per Kernel Frequency Change'),
+          ]
 
-plt.title('Title')
-plt.xticks(x, df['n_kernels'], rotation=90)
-plt.xlabel('# Kernels')
+legend1 = plt.legend(handles=legend)
+
+
+plt.xticks(x, df['n_kernels'])
+plt.xlabel('Number of Kernels')
 plt.ylabel('Time (ms)')
 
 plt.tight_layout()
