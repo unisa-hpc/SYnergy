@@ -4,13 +4,13 @@ import sys
 
 def parse_log_file_refined(file_path):
     # Define regex patterns for extracting data
-    freq_pattern = re.compile(r'Running freq_overhead for (\d+) iteration')
+    nkernels_pattern = re.compile(r'Running freq_overhead for (\d+) iterations')
     type_pattern = re.compile(r'Policy: (app|kernel|phase)')
     energy_sample_before_pattern = re.compile(r'energy-sample-before\[J\]: ([\d.]+)')
     energy_sample_after_pattern = re.compile(r'energy-sample-after\[J\]: ([\d.]+)')
     energy_sample_delta_pattern = re.compile(r'energy-sample-delta\[J\]: ([\d.]+)')
     energy_sample_time_pattern = re.compile(r'energy-sample-time\[ms\]: ([\d.]+)')
-    time_value_pattern = re.compile(r'device-time\[ms\]: \[ (.+) \]')
+    time_value_pattern = re.compile(r'total-time\[ms\]: \[ (.+) \]')
     freq_change_overhead_pattern = re.compile(r'freq-change-overhead\[ms\]: \[ (.+) \]')
     device_energy_value_pattern = re.compile(r'device-energy\[J\]: \[ (.+) \]')
     host_energy_value_pattern = re.compile(r'host-energy\[J\]: \[ (.+) \]')
@@ -22,17 +22,16 @@ def parse_log_file_refined(file_path):
 
     # Initialize variables to store the parsed data
     data = {}
-    current_freq = None
+    nkernels = None
 
     with open(file_path, 'r') as file:
-        lines = file.readlines()
-        for line in lines[1:]:
+        for line in file:
             # Check for frequency
-            freq_match = freq_pattern.match(line)
-            if freq_match:
-                current_freq = int(freq_match.group(1))
-                if current_freq not in data:
-                    data[current_freq] = {'freq': current_freq}
+            nkernels_match = nkernels_pattern.match(line)
+            if nkernels_match:
+                nkernels = int(nkernels_match.group(1))
+                if nkernels not in data:
+                    data[nkernels] = {'n_kernels': nkernels}
                 continue
 
             # Check for frequency type
@@ -42,31 +41,31 @@ def parse_log_file_refined(file_path):
                 continue               
 
             # Extract and store data
-            if current_freq is not None:
+            if nkernels is not None:
                 prefix = f'{current_type}_'
                 
                 energy_sample_before_match = energy_sample_before_pattern.match(line)
                 if energy_sample_before_match:
                     energy_sample_before = energy_sample_before_match.group(1)
-                    data[current_freq][f'{prefix}energy_sample_before'] = float(energy_sample_before)
+                    data[nkernels][f'{prefix}energy_sample_before'] = float(energy_sample_before)
                     continue
                 
                 energy_sample_after_match = energy_sample_after_pattern.match(line)
                 if energy_sample_after_match:
                     energy_sample_after = energy_sample_after_match.group(1)
-                    data[current_freq][f'{prefix}energy_sample_after'] = float(energy_sample_after)
+                    data[nkernels][f'{prefix}energy_sample_after'] = float(energy_sample_after)
                     continue
                 
                 energy_sample_delta_match = energy_sample_delta_pattern.match(line)
                 if energy_sample_delta_match:
                     energy_sample_delta = energy_sample_delta_match.group(1)
-                    data[current_freq][f'{prefix}energy_sample_delta'] = float(energy_sample_delta)
+                    data[nkernels][f'{prefix}energy_sample_delta'] = float(energy_sample_delta)
                     continue
                 
                 energy_sample_time_match = energy_sample_time_pattern.match(line)
                 if energy_sample_time_match:
                     energy_sample_time = energy_sample_time_match.group(1)
-                    data[current_freq][f'{prefix}energy_sample_time'] = float(energy_sample_time)
+                    data[nkernels][f'{prefix}energy_sample_time'] = float(energy_sample_time)
                     continue 
                 
                 time_value_match = time_value_pattern.match(line)
@@ -74,28 +73,28 @@ def parse_log_file_refined(file_path):
                 device_energy_value_match = device_energy_value_pattern.match(line)
                 host_energy_value_match = host_energy_value_pattern.match(line)
 
-                # For device-time, device-energy, and host-energy
+                # For total-time, device-energy, and host-energy
                 for match, metric in zip([time_value_match, freq_change_overhead_match, device_energy_value_match, host_energy_value_match], 
-                                         ['device_time', 'freq_change_overhead', 'device_energy', 'host_energy']):
+                                         ['total_time', 'freq_change_overhead', 'device_energy', 'host_energy']):
                     if match:
                         # Extract other statistics
                         for _ in range(5):
                             stat_line = next(file)
                             avg_match = avg_pattern.match(stat_line)
                             if avg_match:
-                                data[current_freq][f'{prefix}{metric}_Average'] = float(avg_match.group(3))
+                                data[nkernels][f'{prefix}{metric}_Average'] = float(avg_match.group(3))
                             stdev_match = stdev_pattern.match(stat_line)
                             if stdev_match:
-                                data[current_freq][f'{prefix}{metric}_Stdev'] = float(stdev_match.group(3))
+                                data[nkernels][f'{prefix}{metric}_Stdev'] = float(stdev_match.group(3))
                             max_match = max_pattern.match(stat_line)
                             if max_match:
-                                data[current_freq][f'{prefix}{metric}_Max'] = float(max_match.group(3))
+                                data[nkernels][f'{prefix}{metric}_Max'] = float(max_match.group(3))
                             min_match = min_pattern.match(stat_line)
                             if min_match:
-                                data[current_freq][f'{prefix}{metric}_Min'] = float(min_match.group(3))
+                                data[nkernels][f'{prefix}{metric}_Min'] = float(min_match.group(3))
                             median_match = median_pattern.match(stat_line)
                             if median_match:
-                                data[current_freq][f'{prefix}{metric}_Median'] = float(median_match.group(3))
+                                data[nkernels][f'{prefix}{metric}_Median'] = float(median_match.group(3))
     
     return pd.DataFrame.from_dict(data, orient='index')
 

@@ -34,14 +34,14 @@ if [[ $SUPPORTED_ARCHS != *"$arch"* ]]; then
 fi
 
 echo "Running freq_overhead for $arch" > ./output.log
-for n_iters in 8 16 32 64; do
+for n_iters in 8 16 32; do
   echo "Running freq_overhead for $n_iters iterations" >> ./output.log
   echo "Policy: app" >> ./output.log
-  $SCRIPT_DIR/freq_overhead app 10 $n_iters 1087 1087 >> ./output.log
+  $SCRIPT_DIR/freq_overhead app 10 $n_iters 1024 524288 1087 1087 >> ./output.log
   echo "Policy: phase" >> ./output.log
-  $SCRIPT_DIR/freq_overhead phase 10 $n_iters 1117 997 >> ./output.log
+  $SCRIPT_DIR/freq_overhead phase 10 $n_iters 1024 524288 1117 997 >> ./output.log
   echo "Policy: kernel" >> ./output.log
-  $SCRIPT_DIR/freq_overhead kernel 10 $n_iters 1117 997 >> ./output.log
+  $SCRIPT_DIR/freq_overhead kernel 10 $n_iters 1024 524288 1117 997 >> ./output.log
 done
 
 reset_freq

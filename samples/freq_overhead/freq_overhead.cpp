@@ -39,16 +39,16 @@ double matrix_mul(synergy::queue& q,
   FreqChangePolicy policy,
   size_t num_iters) {
   std::chrono::high_resolution_clock::time_point start, end;
-  std::chrono::duration<double> duration {0};
+  double duration {0};
   for (int it = 0; it < num_iters; it++) {
     if (it == 0 || policy == FreqChangePolicy::KERNEL) {
       start = std::chrono::high_resolution_clock::now();
       auto e = q.submit(0, freq, [&](sycl::handler& cgh) {});
       e.wait();
       end = std::chrono::high_resolution_clock::now();
-      duration += std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+      duration += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     }
-    sycl::event e = q.submit([&](sycl::handler& h) {
+    q.submit([&](sycl::handler& h) {
       sycl::accessor a_acc{a_buf, h, sycl::read_only};
       sycl::accessor b_acc{b_buf, h, sycl::read_only};
       sycl::accessor c_acc{c_buf, h, sycl::read_write};
@@ -64,9 +64,9 @@ double matrix_mul(synergy::queue& q,
           c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
         }
       });
-    });
+    }).wait();
   }
-  return duration.count();
+  return duration;
 }
 
 double mersenne(synergy::queue& q,
@@ -91,14 +91,14 @@ double mersenne(synergy::queue& q,
   #define MT_SHIFT1 18
   #define PI 3.14159265358979f
   std::chrono::high_resolution_clock::time_point start, end;
-  std::chrono::duration<double> duration {0};
+  double duration {0};
   for (int it = 0; it < num_iters; it++) {
     if ((it == 0 && policy == FreqChangePolicy::PHASE) || policy == FreqChangePolicy::KERNEL) {
       start = std::chrono::high_resolution_clock::now();
       auto e = q.submit(0, freq, [&](sycl::handler& cgh) {});
       e.wait();
       end = std::chrono::high_resolution_clock::now();
-      duration += std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+      duration += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     }
     q.submit([&](sycl::handler& cgh) {
       auto ma_acc = buf_ma.get_access<sycl::access::mode::read>(cgh);
@@ -167,9 +167,9 @@ double mersenne(synergy::queue& q,
           result_acc[gid] = val;
         }
       });
-    });
+    }).wait();
   }
-  return duration.count();
+  return duration;
 }
 
 template<typename T>
@@ -248,22 +248,23 @@ int main(int argc, char** argv) {
 
   synergy::queue q {sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}}};
 
-  std::vector<double> device_times;
+  std::vector<double> total_times;
   std::vector<synergy::energy> device_consumptions;
   std::vector<synergy::energy> host_consumptions;
   std::vector<double> freq_change_overheads;
 
   for (int i = 0; i < num_runs; i++) {
     double freq_change_overhead = 0;
+
     auto start = std::chrono::high_resolution_clock::now();
     freq_change_overhead += matrix_mul(q, matmul_size, matA_buf, matB_buf, matC_buf, freq_matmul, policy, num_iters);
     freq_change_overhead += mersenne(q, mersenne_size, buf_ma, buf_b, buf_c, buf_seed, buf_result, freq_mersenne, policy, num_iters);
     q.wait_and_throw();
-    freq_change_overheads.push_back(freq_change_overhead);
     auto end = std::chrono::high_resolution_clock::now();
+
+    freq_change_overheads.push_back(freq_change_overhead);
     double duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    device_times.push_back(duration);
-    
+    total_times.push_back(duration);
     auto device_consumption = q.device_energy_consumption();
     device_consumptions.push_back(device_consumption);
     auto host_consumption = q.host_energy_consumption();
@@ -276,7 +277,7 @@ int main(int argc, char** argv) {
   std::cout << "energy-sample-after[J]: "  << (ending_energy) << std::endl;
   std::cout << "energy-sample-delta[J]: "  << std::abs(ending_energy - starting_energy) << std::endl;
   std::cout << "energy-sample-time[ms]: " << SAMPLING_TIME << std::endl;
-  print_metrics(device_times, "device-time", "ms");
+  print_metrics(total_times, "total-time", "ms");
   print_metrics(freq_change_overheads, "freq-change-overhead", "ms");
   print_metrics(device_consumptions, "device-energy", "J");
   print_metrics(host_consumptions, "host-energy", "J");
