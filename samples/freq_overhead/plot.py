@@ -23,8 +23,8 @@ df['phase_overhead_time'] = data['phase_freq_change_overhead_Average']
 df['kernel_total_time'] = data['kernel_total_time_Average'] - data['kernel_freq_change_overhead_Average']
 df['kernel_overhead_time'] = data['kernel_freq_change_overhead_Average']
 
-KERNEL_HATCHES = '/////'
-PHASE_HATCHES = '.....'
+KERNEL_HATCHES = '///'
+PHASE_HATCHES = '..'
 
 bar_width = 0.3
 x = np.arange(len(df['n_kernels']))
@@ -41,7 +41,7 @@ plt.bar(x + bar_width, df['kernel_overhead_time'], width=bar_width, bottom=df['k
 legend = [Patch(facecolor='blue', label='Computation Time'), 
           Patch(facecolor='green', label='Frequency Change Time'),
           Patch(facecolor='none', edgecolor='k', label='Per App Frequency Change'),
-          Patch(facecolor='none', edgecolor='k', hatch=PHASE_HATCHES, label='Per Phase Frequency Change'),
+          Patch(facecolor='none', edgecolor='k', hatch=PHASE_HATCHES + ".", label='Per Phase Frequency Change'),
           Patch(facecolor='none', edgecolor='k', hatch=KERNEL_HATCHES, label='Per Kernel Frequency Change'),
           ]
 
@@ -53,4 +53,4 @@ plt.xlabel('Number of Kernels')
 plt.ylabel('Time (ms)')
 
 plt.tight_layout()
-plt.savefig('plots.pdf', dpi=800)
+plt.savefig('plots.pdf', bbox_inches="tight")
