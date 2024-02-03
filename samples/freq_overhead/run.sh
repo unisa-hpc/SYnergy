@@ -2,24 +2,11 @@
 
 SUPPORTED_ARCHS=" intel cuda "
 arch="cuda"
-frequencies=""
-def_core=""
-def_mem=""
-num_iters=15
-skip_factor=5
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --arch=*)
+    --platform=*)
       arch="${1#*=}"
-      shift
-      ;;
-    --num-iters=*)
-      num_iters="${1#*=}"
-      shift
-      ;;
-    --skip-factor=*)
-      skip_factor="${1#*=}"
       shift
       ;;
     *)
@@ -46,46 +33,15 @@ if [[ $SUPPORTED_ARCHS != *"$arch"* ]]; then
   exit 1
 fi
 
-if [[ "$arch" = "intel" ]]; then
-  intel_gpu_frequency -d
-  output=$(intel_gpu_frequency)
-  # find min and max frequencies
-  min=$(echo "$output" | grep "min" | awk '{print $2}')
-  max=$(echo "$output" | grep "max" | awk '{print $2}')
-  # for each frequency between min and max, increment i by 50
-  for ((i=min; i<=max; i+=50)); do
-    frequencies="$frequencies $i"
-  done
-  # trim leading whitespace
-  frequencies=$(echo "$frequencies" | sed -e 's/^[[:space:]]*//')
-elif [[ "$arch" = "cuda" ]]; then
-  frequencies=$(nvidia-smi -i 0 --query-supported-clocks=gr --format=csv,noheader,nounits)
-  # get half of the frequencies in the frequency array
-  frequencies=$(echo "$frequencies" | awk '{print $1}' | awk 'NR % 5 == 0')
-
-  nvsmi_out=$(nvidia-smi  -q | grep "Default Applications Clocks" -A 2 | tail -n +2)
-  def_core=$(echo $nvsmi_out | awk '{print $3}')
-  def_mem=$(echo $nvsmi_out | awk '{print $7}')
-fi
-
-# run the benchmark for each frequency
-for freq in $frequencies; do
-  echo "[*] Running benchmark for frequency $freq"
-  if [[ "$arch" = "intel" ]]; then
-    intel_gpu_frequency --set $freq
-  elif [[ "$arch" = "cuda" ]]; then
-    nvidia-smi -ac $def_mem,$freq > /dev/null
-  fi
-  echo "App frequency setting..."
-  $SCRIPT_DIR/freq_overhead $num_iters 1
-  
-  reset_freq
-  echo "Kernel frequency setting..."
-  $SCRIPT_DIR/freq_overhead $num_iters 1 $freq
-  
-  reset_freq
-  echo "Phase frequency setting..."
-  $SCRIPT_DIR/freq_overhead $num_iters $skip_factor $freq
+echo "Running freq_overhead for $arch" > ./output.log
+for n_iters in 8 16 32 64; do
+  echo "Running freq_overhead for $n_iters iteration" >> ./output.log
+  echo "Policy: app" >> ./output.log
+  $SCRIPT_DIR/freq_overhead app 10 $n_iters 1087 1087 >> ./output.log
+  echo "Policy: phase" >> ./output.log
+  $SCRIPT_DIR/freq_overhead phase 10 $n_iters 1117 997 >> ./output.log
+  echo "Policy: kernel" >> ./output.log
+  $SCRIPT_DIR/freq_overhead kernel 10 $n_iters 1117 997 >> ./output.log
 done
 
 reset_freq
