@@ -4,13 +4,14 @@ import sys
 
 def parse_log_file_refined(file_path):
     # Define regex patterns for extracting data
-    freq_pattern = re.compile(r'\[\*\] Running benchmark for frequency (\d+)')
-    type_pattern = re.compile(r'(App|Kernel|Phase) frequency setting\.\.\.')
+    freq_pattern = re.compile(r'Running freq_overhead for (\d+) iteration')
+    type_pattern = re.compile(r'Policy: (app|kernel|phase)')
     energy_sample_before_pattern = re.compile(r'energy-sample-before\[J\]: ([\d.]+)')
     energy_sample_after_pattern = re.compile(r'energy-sample-after\[J\]: ([\d.]+)')
     energy_sample_delta_pattern = re.compile(r'energy-sample-delta\[J\]: ([\d.]+)')
     energy_sample_time_pattern = re.compile(r'energy-sample-time\[ms\]: ([\d.]+)')
     time_value_pattern = re.compile(r'device-time\[ms\]: \[ (.+) \]')
+    freq_change_overhead_pattern = re.compile(r'freq-change-overhead\[ms\]: \[ (.+) \]')
     device_energy_value_pattern = re.compile(r'device-energy\[J\]: \[ (.+) \]')
     host_energy_value_pattern = re.compile(r'host-energy\[J\]: \[ (.+) \]')
     avg_pattern = re.compile(r'(.+)-avg\[(ms|J)\]: ([\d.]+)')
@@ -24,7 +25,8 @@ def parse_log_file_refined(file_path):
     current_freq = None
 
     with open(file_path, 'r') as file:
-        for line in file:
+        lines = file.readlines()
+        for line in lines[1:]:
             # Check for frequency
             freq_match = freq_pattern.match(line)
             if freq_match:
@@ -68,12 +70,13 @@ def parse_log_file_refined(file_path):
                     continue 
                 
                 time_value_match = time_value_pattern.match(line)
+                freq_change_overhead_match = freq_change_overhead_pattern.match(line)
                 device_energy_value_match = device_energy_value_pattern.match(line)
                 host_energy_value_match = host_energy_value_pattern.match(line)
 
                 # For device-time, device-energy, and host-energy
-                for match, metric in zip([time_value_match, device_energy_value_match, host_energy_value_match], 
-                                         ['device_time', 'device_energy', 'host_energy']):
+                for match, metric in zip([time_value_match, freq_change_overhead_match, device_energy_value_match, host_energy_value_match], 
+                                         ['device_time', 'freq_change_overhead', 'device_energy', 'host_energy']):
                     if match:
                         # Extract other statistics
                         for _ in range(5):
