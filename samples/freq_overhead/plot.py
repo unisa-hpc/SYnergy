@@ -24,7 +24,7 @@ df['kernel_total_time'] = data['kernel_total_time_Average'] - data['kernel_freq_
 df['kernel_overhead_time'] = data['kernel_freq_change_overhead_Average']
 
 KERNEL_HATCHES = '/////'
-PHASE_HATCHES = '......'
+PHASE_HATCHES = '.....'
 
 bar_width = 0.3
 x = np.arange(len(df['n_kernels']))
@@ -53,4 +53,4 @@ plt.xlabel('Number of Kernels')
 plt.ylabel('Time (ms)')
 
 plt.tight_layout()
-plt.savefig('plots.pdf')
+plt.savefig('plots.pdf', dpi=800)
