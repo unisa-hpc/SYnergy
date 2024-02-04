@@ -3,27 +3,119 @@
 #include <numeric>
 #include <cmath>
 #include <chrono>
+#include <memory>
+#include "bitmap.h"
 
 
 constexpr size_t NUM_RUNS = 10;
 constexpr size_t NUM_ITERS = 15;
 constexpr size_t SAMPLING_TIME = 2000; // milliseconds
 
+class Sobel {
+public:
+  synergy::queue& q;
+  size_t size;
+  std::vector<sycl::float4> input;
+  std::vector<sycl::float4> output;
+  std::shared_ptr<sycl::buffer<sycl::float4, 2>> input_buf;
+  std::shared_ptr<sycl::buffer<sycl::float4, 2>> output_buf;
+
+  Sobel(synergy::queue& q, size_t size) : q{q}, size{size} {
+    input.resize(size * size);
+    load_bitmap_mirrored("./Brommy.bmp", size, input);
+    output.resize(size * size);
+    input_buf = std::make_shared<sycl::buffer<sycl::float4, 2>>(input.data(), sycl::range<2>{size, size});
+    output_buf = std::make_shared<sycl::buffer<sycl::float4, 2>>(output.data(), sycl::range<2>{size, size});
+  }
+
+  sycl::event operator() () {
+    return q.submit([&](sycl::handler& cgh) {
+      auto in = input_buf->get_access<sycl::access::mode::read>(cgh);
+      auto out = output_buf->get_access<sycl::access::mode::discard_write>(cgh);
+      sycl::range<2> ndrange{size, size};
+
+      // Sobel kernel 3x3
+      const float kernel[] = {1, 0, -1, 2, 0, -2, 1, 0, -1};
+
+      cgh.parallel_for<class SobelBenchKernel>(
+        ndrange, [in, out, kernel, size_ = size, num_iters=2](sycl::id<2> gid) {
+          int x = gid[0];
+          int y = gid[1];
+
+          for(size_t i = 0; i < num_iters; i++) {
+            sycl::float4 Gx = sycl::float4(0, 0, 0, 0);
+            sycl::float4 Gy = sycl::float4(0, 0, 0, 0);
+            const int radius = 3;
+
+            // constant-size loops in [0,1,2]
+            for(int x_shift = 0; x_shift < 3; x_shift++) {
+              for(int y_shift = 0; y_shift < 3; y_shift++) {
+                // sample position
+                uint xs = x + x_shift - 1; // [x-1,x,x+1]
+                uint ys = y + y_shift - 1; // [y-1,y,y+1]
+                // for the same pixel, convolution is always 0
+                if(x == xs && y == ys)
+                  continue;
+                // boundary check
+                if(xs < 0 || xs >= size_ || ys < 0 || ys >= size_)
+                  continue;
+
+                // sample color
+                sycl::float4 sample = in[{xs, ys}];
+
+                // convolution calculation
+                int offset_x = x_shift + y_shift * radius;
+                int offset_y = y_shift + x_shift * radius;
+
+                float conv_x = kernel[offset_x];
+                sycl::float4 conv4_x = sycl::float4(conv_x);
+                Gx += conv4_x * sample;
+
+                float conv_y = kernel[offset_y];
+                sycl::float4 conv4_y = sycl::float4(conv_y);
+                Gy += conv4_y * sample;
+              }
+            }
+            // taking root of sums of squares of Gx and Gy
+            sycl::float4 color = hypot(Gx, Gy);
+            sycl::float4 minval = sycl::float4(0.0, 0.0, 0.0, 0.0);
+            sycl::float4 maxval = sycl::float4(1.0, 1.0, 1.0, 1.0);
+            out[gid] = clamp(color, minval, maxval);
+          }
+        });
+    });
+  }
+
+};
+
 class MatMul {
 public:
   synergy::queue& q;
   size_t size;
-  sycl::buffer<int, 2>& a_buf;
-  sycl::buffer<int, 2>& b_buf; 
-  sycl::buffer<int, 2>& c_buf;
+  std::vector<int> a;
+  std::vector<int> b;
+  std::vector<int> c;
+  std::shared_ptr<sycl::buffer<int, 2>> a_buf;
+  std::shared_ptr<sycl::buffer<int, 2>> b_buf; 
+  std::shared_ptr<sycl::buffer<int, 2>> c_buf;
 
-  MatMul(synergy::queue& q, size_t size, sycl::buffer<int, 2>& a_buf, sycl::buffer<int, 2>& b_buf, sycl::buffer<int, 2>& c_buf) : q{q}, size{size}, a_buf{a_buf}, b_buf{b_buf}, c_buf{c_buf} {}
+  MatMul(synergy::queue& q, size_t size) : q{q}, size{size} {
+    a.resize(size * size);
+    b.resize(size * size);
+    c.resize(size * size);
+    std::fill(a.begin(), a.end(), 1);
+    std::fill(b.begin(), b.end(), 1);
+    std::fill(c.begin(), c.end(), 0);
+    a_buf = std::make_shared<sycl::buffer<int, 2>>(a.data(), sycl::range<2>{size, size});
+    b_buf = std::make_shared<sycl::buffer<int, 2>>(b.data(), sycl::range<2>{size, size});
+    c_buf = std::make_shared<sycl::buffer<int, 2>>(c.data(), sycl::range<2>{size, size});
+  }
 
   sycl::event operator() () {
     return q.submit([&](sycl::handler& h) {
-      sycl::accessor a_acc{a_buf, h, sycl::read_only};
-      sycl::accessor b_acc{b_buf, h, sycl::read_only};
-      sycl::accessor c_acc{c_buf, h, sycl::read_write};
+      sycl::accessor a_acc{*(a_buf.get()), h, sycl::read_only};
+      sycl::accessor b_acc{*(b_buf.get()), h, sycl::read_only};
+      sycl::accessor c_acc{*(c_buf.get()), h, sycl::read_write};
 
       sycl::range<2> grid{size, size};
       sycl::range<2> block{size < 32 ? size : 32, size < 32 ? size : 32};
@@ -40,38 +132,54 @@ public:
   }
 };
 class Mersenne {
-#define MT_RNG_COUNT 4096
-#define MT_MM 9
-#define MT_NN 19
-#define MT_WMASK 0xFFFFFFFFU
-#define MT_UMASK 0xFFFFFFFEU
-#define MT_LMASK 0x1U
-#define MT_SHIFT0 12
-#define MT_SHIFTB 7
-#define MT_SHIFTC 15
-#define MT_SHIFT1 18
-#define PI 3.14159265358979fq
 public:
+  #define MT_RNG_COUNT 4096
+  #define MT_MM 9
+  #define MT_NN 19
+  #define MT_WMASK 0xFFFFFFFFU
+  #define MT_UMASK 0xFFFFFFFEU
+  #define MT_LMASK 0x1U
+  #define MT_SHIFT0 12
+  #define MT_SHIFTB 7
+  #define MT_SHIFTC 15
+  #define MT_SHIFT1 18
+  #define PI 3.14159265358979fq
   synergy::queue& q;
-  size_t mersenne_size;
-  sycl::buffer<uint>& buf_ma;
-  sycl::buffer<uint>& buf_b;
-  sycl::buffer<uint>& buf_c;
-  sycl::buffer<uint>& buf_seed;
-  sycl::buffer<sycl::float4>& buf_result;
+  size_t size;
+  std::vector<uint> ma;
+  std::vector<uint> b;
+  std::vector<uint> c;
+  std::vector<uint> seed;
+  std::vector<sycl::float4> result;
+  std::shared_ptr<sycl::buffer<uint>> buf_ma;
+  std::shared_ptr<sycl::buffer<uint>> buf_b;
+  std::shared_ptr<sycl::buffer<uint>> buf_c;
+  std::shared_ptr<sycl::buffer<uint>> buf_seed;
+  std::shared_ptr<sycl::buffer<sycl::float4>> buf_result;
 
-  Mersenne(synergy::queue& q, size_t mersenne_size, sycl::buffer<uint>& buf_ma, sycl::buffer<uint>& buf_b, sycl::buffer<uint>& buf_c, sycl::buffer<uint>& buf_seed, sycl::buffer<sycl::float4>& buf_result) : q{q}, mersenne_size{mersenne_size}, buf_ma{buf_ma}, buf_b{buf_b}, buf_c{buf_c}, buf_seed{buf_seed}, buf_result{buf_result} {}
+  Mersenne(synergy::queue& q, size_t size) : q{q}, size{size} {
+    ma.resize(size);
+    b.resize(size);
+    c.resize(size);
+    seed.resize(size);
+    result.resize(size);
+    buf_ma = std::make_shared<sycl::buffer<uint>>(ma.data(), sycl::range<1>{size});
+    buf_b = std::make_shared<sycl::buffer<uint>>(b.data(), sycl::range<1>{size});
+    buf_c = std::make_shared<sycl::buffer<uint>>(c.data(), sycl::range<1>{size});
+    buf_seed = std::make_shared<sycl::buffer<uint>>(seed.data(), sycl::range<1>{size});
+    buf_result = std::make_shared<sycl::buffer<sycl::float4>>(result.data(), sycl::range<1>{size});
+  }
 
   sycl::event operator() () {
     return q.submit([&](sycl::handler& cgh) {
-      auto ma_acc = buf_ma.get_access<sycl::access::mode::read>(cgh);
-      auto b_acc = buf_b.get_access<sycl::access::mode::read>(cgh);
-      auto c_acc = buf_c.get_access<sycl::access::mode::read>(cgh);
-      auto seed_acc = buf_seed.get_access<sycl::access::mode::read>(cgh);
-      auto result_acc = buf_result.get_access<sycl::access::mode::write>(cgh);
+      auto ma_acc = buf_ma->get_access<sycl::access::mode::read>(cgh);
+      auto b_acc = buf_b->get_access<sycl::access::mode::read>(cgh);
+      auto c_acc = buf_c->get_access<sycl::access::mode::read>(cgh);
+      auto seed_acc = buf_seed->get_access<sycl::access::mode::read>(cgh);
+      auto result_acc = buf_result->get_access<sycl::access::mode::write>(cgh);
 
-      sycl::range<1> ndrange{mersenne_size};
-      cgh.parallel_for<class MerseTwisterKernel>(ndrange, [=, length = mersenne_size, num_iters = 5000](sycl::id<1> id) {
+      sycl::range<1> ndrange{size};
+      cgh.parallel_for<class MerseTwisterKernel>(ndrange, [=, length = size, num_iters = 5000](sycl::id<1> id) {
         int gid = id[0];
 
         if(gid >= length)
@@ -180,9 +288,6 @@ void print_metrics(std::vector<T> values, std::string label, std::string unit = 
 
 
 struct FreqChangeCost {
-  double time;
-  synergy::energy device_energy;
-  synergy::energy host_energy;
   double overhead_time;
   synergy::energy overhead_device_energy;
   synergy::energy overhead_host_energy;
@@ -190,51 +295,43 @@ struct FreqChangeCost {
 
 template<typename T>
 FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqChangePolicy policy, bool is_first, size_t num_iters, T& kernel) {
-  std::chrono::high_resolution_clock::time_point start_time, end_time;
-  synergy::energy start_energy_device, end_energy_device, start_energy_host, end_energy_host;
-  double overhead_time {0}, time {0};
-  synergy::energy overhead_device_energy {0}, device_energy {0}, overhead_host_energy {0}, host_energy {0};
+  std::chrono::high_resolution_clock::time_point overhead_start_time, overhead_end_time;
+  synergy::energy overhead_start_energy_device, overhead_end_energy_device, overhead_start_energy_host, overhead_end_energy_host;
+  double overhead_time {0};
+  synergy::energy overhead_device_energy {0}, overhead_host_energy {0};
   for (int it = 0; it < num_iters; it++) {
     if ((it == 0 && ((is_first && policy == FreqChangePolicy::APP) || (policy == FreqChangePolicy::PHASE))) || policy == FreqChangePolicy::KERNEL) {
-      start_time = std::chrono::high_resolution_clock::now();
-      start_energy_device = q.device_energy_consumption();
-      start_energy_host = q.host_energy_consumption();
-      q.get_synergy_device().set_core_frequency(freq);
-      end_time = std::chrono::high_resolution_clock::now();
-      end_energy_device = q.device_energy_consumption();
-      end_energy_host = q.host_energy_consumption();
+      overhead_start_time = std::chrono::high_resolution_clock::now();
+      overhead_start_energy_device = q.device_energy_consumption();
+      overhead_start_energy_host = q.host_energy_consumption();
+      auto cfe = q.submit(0, freq, [&](sycl::handler& cgh){
+        cgh.single_task([=](){
+          // Do nothing
+        });
+      }); // Set frequency
+      cfe.wait();
+      overhead_end_time = std::chrono::high_resolution_clock::now();
+      overhead_end_energy_device = q.device_energy_consumption();
+      overhead_end_energy_host = q.host_energy_consumption();
 
-      overhead_time += std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-      overhead_device_energy += end_energy_device - start_energy_device;
-      overhead_host_energy += end_energy_host - start_energy_host;
-      q.set_target_frequencies(0, 0);
+      overhead_time += std::chrono::duration_cast<std::chrono::milliseconds>(overhead_end_time - overhead_start_time).count();
+      overhead_device_energy += overhead_end_energy_device - overhead_start_energy_device;
+      overhead_host_energy += overhead_end_energy_host - overhead_start_energy_host;
     }
     
-    // start_time = std::chrono::high_resolution_clock::now();
-    start_energy_device = q.device_energy_consumption();
-    start_energy_host = q.host_energy_consumption();
     auto e = kernel(); // Kernel Launch
-    // end_time = std::chrono::high_resolution_clock::now();
-    end_energy_device = q.device_energy_consumption();
-    end_energy_host = q.host_energy_consumption();
-    auto start_kernel = e.template get_profiling_info<sycl::info::event_profiling::command_start>() / 1000000;
-    auto end_kernel = e.template get_profiling_info<sycl::info::event_profiling::command_end>() / 1000000;
-    
-    // time += std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-    time += end_kernel - start_kernel;
-    device_energy += end_energy_device - start_energy_device;
-    host_energy += end_energy_host - start_energy_host;
+    e.wait();
   }
-  return {time, device_energy, host_energy, overhead_time, overhead_device_energy, overhead_host_energy};
+  return {overhead_time, overhead_device_energy, overhead_host_energy};
 }
 
 int main(int argc, char** argv) {
   synergy::frequency freq_matmul = 0;
-  synergy::frequency freq_mersenne = 0;
+  synergy::frequency freq_sobel = 0;
   FreqChangePolicy policy;
-  size_t num_iters, num_runs, matmul_size, mersenne_size;
+  size_t num_iters, num_runs, matmul_size, sobel_size;
   if (argc < 8) {
-    std::cerr << "Usage: " << argv[0] << " <policy> <num-runs> <num-iters> <matmul_size> <mersenne_size> <freq_matmul> <freq_mersenne>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " <policy> <num-runs> <num-iters> <matmul_size> <sobel_size> <freq_matmul> <freq_sobel>" << std::endl;
     exit(1);
   }
 
@@ -245,38 +342,11 @@ int main(int argc, char** argv) {
   num_runs = std::stoi(argv[2]);
   num_iters = std::stoi(argv[3]);
   matmul_size = std::stoi(argv[4]);
-  mersenne_size = std::stoi(argv[5]);
+  sobel_size = std::stoi(argv[5]);
   freq_matmul = std::stoi(argv[6]);
-  freq_mersenne = std::stoi(argv[7]);
-
-  std::vector<int> matA(matmul_size * matmul_size, 1);
-  std::vector<int> matB(matmul_size * matmul_size, 1);
-  std::vector<int> matC(matmul_size * matmul_size, 0);
-
-  sycl::buffer<int, 2> matA_buf(matA.data(), sycl::range<2>{matmul_size, matmul_size});
-  sycl::buffer<int, 2> matB_buf(matB.data(), sycl::range<2>{matmul_size, matmul_size});
-  sycl::buffer<int, 2> matC_buf(matC.data(), sycl::range<2>{matmul_size, matmul_size});
-
-  std::vector<uint> ma;
-  std::vector<uint> b;
-  std::vector<uint> c;
-  std::vector<uint> seed;
-  std::vector<sycl::float4> result;
-  ma.resize(mersenne_size);
-  b.resize(mersenne_size);
-  c.resize(mersenne_size);
-  seed.resize(mersenne_size);
-  result.resize(mersenne_size);
-
-  sycl::buffer<uint> buf_ma(ma.data(), sycl::range<1>{mersenne_size});
-  sycl::buffer<uint> buf_b(b.data(), sycl::range<1>{mersenne_size});
-  sycl::buffer<uint> buf_c(c.data(), sycl::range<1>{mersenne_size});
-  sycl::buffer<uint> buf_seed(seed.data(), sycl::range<1>{mersenne_size});
-  sycl::buffer<sycl::float4> buf_result(result.data(), sycl::range<1>{mersenne_size});
+  freq_sobel = std::stoi(argv[7]);
 
   auto starting_energy = sample_energy_consumption(SAMPLING_TIME);
-
-  synergy::queue q {sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}}};
 
   std::vector<double> total_times;
   std::vector<synergy::energy> device_consumptions;
@@ -285,22 +355,29 @@ int main(int argc, char** argv) {
   std::vector<synergy::energy> freq_change_device_energy_overheads;
   std::vector<synergy::energy> freq_change_host_energy_overheads;
 
-  MatMul matmul_kernel{q, matmul_size, matA_buf, matB_buf, matC_buf};
-  Mersenne mersenne_kernel{q, mersenne_size, buf_ma, buf_b, buf_c, buf_seed, buf_result};
-
   for (int i = 0; i < num_runs; i++) {
+    synergy::queue q {sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}}};
+    MatMul matmul_kernel{q, matmul_size};
+    Sobel sobel_kernel{q, sobel_size};
 
+    auto start_time = std::chrono::high_resolution_clock::now();
+
+    // launch kernels
     auto ret_mat = launch_kernel(q, freq_matmul, policy, true, num_iters, matmul_kernel);
-    auto ret_mer = launch_kernel(q, freq_mersenne, policy, false, num_iters, mersenne_kernel);
+    auto ret_sob = launch_kernel(q, freq_sobel, policy, false, num_iters, sobel_kernel);
+    q.wait_and_throw(); // wait for all kernels to finish
 
-    q.wait_and_throw();
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    auto device_consumption = q.device_energy_consumption();
+    auto host_consumption = q.host_energy_consumption();
 
-    total_times.push_back(ret_mat.time + ret_mer.time);
-    device_consumptions.push_back(ret_mat.device_energy + ret_mer.device_energy);
-    host_consumptions.push_back(ret_mat.host_energy + ret_mer.host_energy);
-    freq_change_time_overheads.push_back(ret_mat.overhead_time + ret_mer.overhead_time);
-    freq_change_device_energy_overheads.push_back(ret_mat.overhead_device_energy + ret_mer.overhead_device_energy);
-    freq_change_host_energy_overheads.push_back(ret_mat.overhead_host_energy + ret_mer.overhead_host_energy);
+    total_times.push_back(duration);
+    device_consumptions.push_back(device_consumption);
+    host_consumptions.push_back(host_consumption);
+    freq_change_time_overheads.push_back(ret_mat.overhead_time + ret_sob.overhead_time);
+    freq_change_device_energy_overheads.push_back(ret_mat.overhead_device_energy + ret_sob.overhead_device_energy);
+    freq_change_host_energy_overheads.push_back(ret_mat.overhead_host_energy + ret_sob.overhead_host_energy);
   }
 
   auto ending_energy = sample_energy_consumption(SAMPLING_TIME);
