@@ -11,6 +11,7 @@ def parse_log_file_refined(file_path):
     energy_sample_delta_pattern = re.compile(r'energy-sample-delta\[J\]: ([\d.]+)')
     energy_sample_time_pattern = re.compile(r'energy-sample-time\[ms\]: ([\d.]+)')
     time_value_pattern = re.compile(r'total-time\[ms\]: \[ (.+) \]')
+    kernel_value_pattern = re.compile(r'kernel-time\[ms\]: \[ (.+) \]')
     device_energy_value_pattern = re.compile(r'device-energy\[J\]: \[ (.+) \]')
     host_energy_value_pattern = re.compile(r'host-energy\[J\]: \[ (.+) \]')
     freq_change_time_overhead_pattern = re.compile(r'freq-change-time-overhead\[ms\]: \[ (.+) \]')
@@ -71,6 +72,7 @@ def parse_log_file_refined(file_path):
                     continue 
                 
                 time_value_match = time_value_pattern.match(line)
+                kernel_value_match = kernel_value_pattern.match(line)
                 device_energy_value_match = device_energy_value_pattern.match(line)
                 host_energy_value_match = host_energy_value_pattern.match(line)
                 freq_change_time_overhead_match = freq_change_time_overhead_pattern.match(line)
@@ -78,8 +80,8 @@ def parse_log_file_refined(file_path):
                 freq_change_host_energy_overhead_match = freq_change_host_energy_overhead_pattern.match(line)
 
                 # For total-time, device-energy, and host-energy
-                for match, metric in zip([time_value_match, device_energy_value_match, host_energy_value_match, freq_change_time_overhead_match, freq_change_device_energy_overhead_match, freq_change_host_energy_overhead_match], 
-                                         ['total_time', 'device_energy', 'host_energy', 'freq_change_time_overhead', 'freq_change_device_energy_overhead', 'freq_change_host_energy_overhead']):
+                for match, metric in zip([time_value_match, kernel_value_match, device_energy_value_match, host_energy_value_match, freq_change_time_overhead_match, freq_change_device_energy_overhead_match, freq_change_host_energy_overhead_match], 
+                                         ['total_time', 'kernel_time', 'device_energy', 'host_energy', 'freq_change_time_overhead', 'freq_change_device_energy_overhead', 'freq_change_host_energy_overhead']):
                     if match:
                         # Extract other statistics
                         for _ in range(5):

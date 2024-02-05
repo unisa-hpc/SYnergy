@@ -131,6 +131,7 @@ public:
     });
   }
 };
+
 class Mersenne {
 public:
   #define MT_RNG_COUNT 4096
@@ -288,6 +289,7 @@ void print_metrics(std::vector<T> values, std::string label, std::string unit = 
 
 
 struct FreqChangeCost {
+  double kernel_time;
   double overhead_time;
   synergy::energy overhead_device_energy;
   synergy::energy overhead_host_energy;
@@ -297,7 +299,7 @@ template<typename T>
 FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqChangePolicy policy, bool is_first, size_t num_iters, T& kernel) {
   std::chrono::high_resolution_clock::time_point overhead_start_time, overhead_end_time;
   synergy::energy overhead_start_energy_device, overhead_end_energy_device, overhead_start_energy_host, overhead_end_energy_host;
-  double overhead_time {0};
+  double overhead_time {0}, kernel_time{0};
   synergy::energy overhead_device_energy {0}, overhead_host_energy {0};
   for (int it = 0; it < num_iters; it++) {
     if ((it == 0 && ((is_first && policy == FreqChangePolicy::APP) || (policy == FreqChangePolicy::PHASE))) || policy == FreqChangePolicy::KERNEL) {
@@ -321,8 +323,9 @@ FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqCha
     
     auto e = kernel(); // Kernel Launch
     e.wait();
+    kernel_time += (e.template get_profiling_info<sycl::info::event_profiling::command_end>() - e.template get_profiling_info<sycl::info::event_profiling::command_start>()) / 1000000; // to milliseconds
   }
-  return {overhead_time, overhead_device_energy, overhead_host_energy};
+  return {kernel_time, overhead_time, overhead_device_energy, overhead_host_energy};
 }
 
 int main(int argc, char** argv) {
@@ -349,6 +352,7 @@ int main(int argc, char** argv) {
   auto starting_energy = sample_energy_consumption(SAMPLING_TIME);
 
   std::vector<double> total_times;
+  std::vector<double> kernel_times;
   std::vector<synergy::energy> device_consumptions;
   std::vector<synergy::energy> host_consumptions;
   std::vector<double> freq_change_time_overheads;
@@ -373,6 +377,7 @@ int main(int argc, char** argv) {
     auto host_consumption = q.host_energy_consumption();
 
     total_times.push_back(duration);
+    kernel_times.push_back(ret_mat.kernel_time + ret_sob.kernel_time);
     device_consumptions.push_back(device_consumption);
     host_consumptions.push_back(host_consumption);
     freq_change_time_overheads.push_back(ret_mat.overhead_time + ret_sob.overhead_time);
@@ -387,6 +392,7 @@ int main(int argc, char** argv) {
   std::cout << "energy-sample-delta[J]: "  << std::abs(ending_energy - starting_energy) << std::endl;
   std::cout << "energy-sample-time[ms]: " << SAMPLING_TIME << std::endl;
   print_metrics(total_times, "total-time", "ms");
+  print_metrics(total_times, "kernel-time", "ms");
   print_metrics(device_consumptions, "device-energy", "J");
   print_metrics(host_consumptions, "host-energy", "J");
   print_metrics(freq_change_time_overheads, "freq-change-time-overhead", "ms");
