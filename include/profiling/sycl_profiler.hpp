@@ -3,6 +3,8 @@
 #include <numeric>
 #include <synergy.hpp>
 
+namespace synergy 
+{
 //TODO: add license
 #define EVENT_VEC_SIZE 1024
 using wall_clock_t = std::chrono::high_resolution_clock;
@@ -178,3 +180,4 @@ private:
 };
 
 // Add energy profiling and expand the output of the profiler for multiple kernels
+}
