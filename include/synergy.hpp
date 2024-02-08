@@ -4,3 +4,4 @@
 
 #include "queue.hpp"
 #include "types.hpp"
+#include "profiling/sycl_profiler.hpp"
