@@ -84,7 +84,7 @@ public:
   }
 
   inline void set_core_frequency(geopm::device_handle handle, frequency target) const {
-    g::platform_io().write_control("GPU_CORE_FREQUENCY_MIN_CONTROL", GEOPM_DOMAIN_GPU, handle, target * 1e6);
+    // g::platform_io().write_control("GPU_CORE_FREQUENCY_MIN_CONTROL", GEOPM_DOMAIN_GPU, handle, target * 1e6);
     g::platform_io().write_control("GPU_CORE_FREQUENCY_MAX_CONTROL", GEOPM_DOMAIN_GPU, handle, target * 1e6);
   }
 
