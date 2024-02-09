@@ -51,14 +51,6 @@ private:
       std::cout << "\nplatform: " << platforms[i].get_info<info::platform::name>() << " ";
 #endif
 
-#ifdef SYNERGY_GEOPM_SUPPORT
-      auto devs = platforms[i].get_devices(info::device_type::gpu);
-      for (size_t j = 0; j < devs.size(); j++) { // TODO: check if this is the correct way to iterate over devices with GEOPM
-        auto ptr = std::make_shared<vendor_device<management::geopm>>(j);
-        devices.insert({devs[j], synergy::device{ptr}});
-      }
-#else
-
 #ifdef SYNERGY_CUDA_SUPPORT
       if (platform_name.find("cuda") != std::string::npos) {
         auto devs = platforms[i].get_devices(info::device_type::gpu);
@@ -91,7 +83,6 @@ private:
           devices.insert({devs[j], synergy::device{ptr}});
         }
       }
-#endif
 #endif
     }
   }

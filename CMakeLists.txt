@@ -9,7 +9,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(SYNERGY_CUDA_SUPPORT "Enable CUDA support" OFF)
 option(SYNERGY_ROCM_SUPPORT "Enable ROCm support" OFF)
 option(SYNERGY_LZ_SUPPORT "Enable Level Zero Support" OFF)
-option(SYNERGY_GEOPM_SUPPORT "Enable GEOPM Support" OFF)
 
 set(SYNERGY_SYCL_IMPL "" CACHE STRING "Select SYCL implementation [OpenSYCL | DPC++]")
 set_property(CACHE SYNERGY_SYCL_IMPL PROPERTY STRINGS "OpenSYCL" "DPC++")
@@ -55,12 +54,6 @@ endif()
 
 if(SYNERGY_KERNEL_PROFILING)
 	target_compile_definitions(synergy INTERFACE SYNERGY_KERNEL_PROFILING)
-endif()
-
-if (SYNERGY_GEOPM_SUPPORT)
-	target_compile_definitions(synergy INTERFACE SYNERGY_GEOPM_SUPPORT)
-	target_link_libraries(synergy INTERFACE geopmd)
-	target_sources(synergy INTERFACE include/vendors/geopm_wrapper.hpp)
 endif()
 
 if(SYNERGY_CUDA_SUPPORT)
