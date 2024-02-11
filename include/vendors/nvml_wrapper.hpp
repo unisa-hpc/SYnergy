@@ -104,15 +104,13 @@ public:
   }
 
   inline void set_core_frequency(nvml::device_handle handle, frequency target) const {
-    unsigned int uncore_frequency = get_uncore_frequency(handle);
-    check(nvmlDeviceSetApplicationsClocks(handle, uncore_frequency, target));
+    check(nvmlDeviceSetGpuLockedClocks(handle, target, target));
   }
 
   inline void set_uncore_frequency(nvml::device_handle handle, frequency target) const {
     std::array<unsigned int, nvml::max_frequencies> core_frequencies;
     unsigned int count_core_frequencies;
     check(nvmlDeviceGetSupportedGraphicsClocks(handle, target, &count_core_frequencies, core_frequencies.data()));
-
     check(nvmlDeviceSetApplicationsClocks(handle, target, core_frequencies[0])); // put highest core frequency
   }
 
