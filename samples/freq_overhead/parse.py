@@ -6,10 +6,6 @@ def parse_log_file_refined(file_path):
     # Define regex patterns for extracting data
     nkernels_pattern = re.compile(r'Running freq_overhead for (\d+) iterations')
     type_pattern = re.compile(r'Policy: (app|kernel|phase)')
-    energy_sample_before_pattern = re.compile(r'energy-sample-before\[J\]: ([\d.]+)')
-    energy_sample_after_pattern = re.compile(r'energy-sample-after\[J\]: ([\d.]+)')
-    energy_sample_delta_pattern = re.compile(r'energy-sample-delta\[J\]: ([\d.]+)')
-    energy_sample_time_pattern = re.compile(r'energy-sample-time\[ms\]: ([\d.]+)')
     time_value_pattern = re.compile(r'total-time\[ms\]: \[ (.+) \]')
     kernel_value_pattern = re.compile(r'kernel-time\[ms\]: \[ (.+) \]')
     device_energy_value_pattern = re.compile(r'device-energy\[J\]: \[ (.+) \]')
@@ -46,31 +42,7 @@ def parse_log_file_refined(file_path):
             # Extract and store data
             if nkernels is not None:
                 prefix = f'{current_type}_'
-                
-                energy_sample_before_match = energy_sample_before_pattern.match(line)
-                if energy_sample_before_match:
-                    energy_sample_before = energy_sample_before_match.group(1)
-                    data[nkernels][f'{prefix}energy_sample_before'] = float(energy_sample_before)
-                    continue
-                
-                energy_sample_after_match = energy_sample_after_pattern.match(line)
-                if energy_sample_after_match:
-                    energy_sample_after = energy_sample_after_match.group(1)
-                    data[nkernels][f'{prefix}energy_sample_after'] = float(energy_sample_after)
-                    continue
-                
-                energy_sample_delta_match = energy_sample_delta_pattern.match(line)
-                if energy_sample_delta_match:
-                    energy_sample_delta = energy_sample_delta_match.group(1)
-                    data[nkernels][f'{prefix}energy_sample_delta'] = float(energy_sample_delta)
-                    continue
-                
-                energy_sample_time_match = energy_sample_time_pattern.match(line)
-                if energy_sample_time_match:
-                    energy_sample_time = energy_sample_time_match.group(1)
-                    data[nkernels][f'{prefix}energy_sample_time'] = float(energy_sample_time)
-                    continue 
-                
+
                 time_value_match = time_value_pattern.match(line)
                 kernel_value_match = kernel_value_pattern.match(line)
                 device_energy_value_match = device_energy_value_pattern.match(line)

@@ -30,20 +30,21 @@ public:
 #endif // SYNERGY_DEVICE_PROFILING
 #else // SYNERGY_GEOPM_SUPPORT
 #ifdef SYNERGY_DEVICE_PROFILING
-#ifdef SYNERGY_HOST_PROFILING
-    this->device_energy_consumption = device.get_energy_usage();
-    this->host_energy_consumption = host_profiler::get_host_energy();
-#else // SYNERGY_HOST_PROFILING
-    this->device_energy_consumption = device.get_energy_usage();
-#endif // SYNERGY_HOST_PROFILING
+    this->device_energy_consumption = device.get_energy_usage() * 1e-6;
 #endif // SYNERGY_DEVICE_PROFILING
+#ifdef SYNERGY_HOST_PROFILING
+    this->host_energy_consumption = host_profiler::get_host_energy() * 1e-6;
+#else // SYNERGY_HOST_PROFILING
+#endif // SYNERGY_HOST_PROFILING
 #endif // SYNERGY_GEOPM_SUPPORT
   }
 
   ~profiling_manager() {
     finished.store(true, std::memory_order_release);
 #ifdef SYNERGY_DEVICE_PROFILING
+#ifndef SYNERGY_GEOPM_SUPPORT
     device_profiler.join();
+#endif
 #endif
   }
 
@@ -69,7 +70,7 @@ public:
 #ifdef SYNERGY_DEVICE_PROFILING
   double device_energy() {
 #ifdef SYNERGY_GEOPM_SUPPORT
-    auto device_energy = device.get_energy_usage();
+    auto device_energy = device.get_energy_usage() * 1e-6;
     return device_energy - device_energy_consumption; // TODO: temporary solution
 #else
     return device_energy_consumption;
@@ -78,7 +79,7 @@ public:
 #ifdef SYNERGY_HOST_PROFILING
   double host_energy() const {
 #ifdef SYNERGY_GEOPM_SUPPORT
-    auto host_energy = host_profiler::get_host_energy();
+    auto host_energy = host_profiler::get_host_energy() * 1e-6;
     return host_energy - host_energy_consumption; // TODO: temporary solution
 #else
     return host_energy_consumption;

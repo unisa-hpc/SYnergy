@@ -6,9 +6,6 @@
 #include <memory>
 #include "bitmap.h"
 
-
-constexpr size_t NUM_RUNS = 10;
-constexpr size_t NUM_ITERS = 15;
 constexpr size_t SAMPLING_TIME = 2000; // milliseconds
 
 class Sobel {
@@ -249,21 +246,17 @@ enum class FreqChangePolicy {
   KERNEL
 };
 
-/**
- * @brief Sample the energy consumption of the host
- * @param sampling_time The time in milliseconds to sample the energy consumption
- * @return The energy consumption in joules
-*/
-synergy::energy sample_energy_consumption(unsigned int sampling_time) {
-  auto start = synergy::host_profiler::get_host_energy();
-  std::this_thread::sleep_for(std::chrono::milliseconds(sampling_time));
-  auto end = synergy::host_profiler::get_host_energy();
-  return ((end - start) / 1000000);
-}
-
 template<typename T>
 void print_metrics(std::vector<T> values, std::string label, std::string unit = "") {
-
+  if (values.empty()) {
+    std::cout << label << "[" << unit << "]: [  ]" << std::endl;
+    std::cout << label << "-avg[" << unit << "]: " << -1 << std::endl;
+    std::cout << label << "-stdev[" << unit << "]: " << -1 << std::endl;
+    std::cout << label << "-max[" << unit << "]: " << -1 << std::endl;
+    std::cout << label << "-min[" << unit << "]: " << -1 << std::endl;
+    std::cout << label << "-median[" << unit << "]: " << -1 << std::endl;
+    return;
+  }
   T avg = std::accumulate(values.begin(), values.end(), 0.0) / values.size();
   // stdev
   T accum = 0.0;
@@ -305,7 +298,9 @@ FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqCha
     if ((it == 0 && ((is_first && policy == FreqChangePolicy::APP) || (policy == FreqChangePolicy::PHASE))) || policy == FreqChangePolicy::KERNEL) {
       overhead_start_time = std::chrono::high_resolution_clock::now();
       overhead_start_energy_device = q.device_energy_consumption();
+#ifdef SYNERGY_HOST_PROFILING
       overhead_start_energy_host = q.host_energy_consumption();
+#endif
       auto cfe = q.submit(0, freq, [&](sycl::handler& cgh){
         cgh.single_task([=](){
           // Do nothing
@@ -314,11 +309,14 @@ FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqCha
       cfe.wait();
       overhead_end_time = std::chrono::high_resolution_clock::now();
       overhead_end_energy_device = q.device_energy_consumption();
+#ifdef SYNERGY_HOST_PROFILING
       overhead_end_energy_host = q.host_energy_consumption();
-
+#endif
       overhead_time += std::chrono::duration_cast<std::chrono::milliseconds>(overhead_end_time - overhead_start_time).count();
       overhead_device_energy += overhead_end_energy_device - overhead_start_energy_device;
+#ifdef SYNERGY_HOST_PROFILING
       overhead_host_energy += overhead_end_energy_host - overhead_start_energy_host;
+#endif
     }
     
     auto e = kernel(); // Kernel Launch
@@ -349,8 +347,6 @@ int main(int argc, char** argv) {
   freq_matmul = std::stoi(argv[6]);
   freq_sobel = std::stoi(argv[7]);
 
-  auto starting_energy = sample_energy_consumption(SAMPLING_TIME);
-
   std::vector<double> total_times;
   std::vector<double> kernel_times;
   std::vector<synergy::energy> device_consumptions;
@@ -363,7 +359,6 @@ int main(int argc, char** argv) {
     synergy::queue q {sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}}};
     MatMul matmul_kernel{q, matmul_size};
     Sobel sobel_kernel{q, sobel_size};
-
     auto start_time = std::chrono::high_resolution_clock::now();
 
     // launch kernels
@@ -373,24 +368,24 @@ int main(int argc, char** argv) {
 
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-    auto device_consumption = q.device_energy_consumption();
-    auto host_consumption = q.host_energy_consumption();
-
     total_times.push_back(duration);
+
     kernel_times.push_back(ret_mat.kernel_time + ret_sob.kernel_time);
+
+    auto device_consumption = q.device_energy_consumption();
     device_consumptions.push_back(device_consumption);
+
+#ifdef SYNERGY_HOST_PROFILING
+    auto host_consumption = q.host_energy_consumption();
     host_consumptions.push_back(host_consumption);
+#endif
     freq_change_time_overheads.push_back(ret_mat.overhead_time + ret_sob.overhead_time);
     freq_change_device_energy_overheads.push_back(ret_mat.overhead_device_energy + ret_sob.overhead_device_energy);
+#ifdef SYNERGY_HOST_PROFILING
     freq_change_host_energy_overheads.push_back(ret_mat.overhead_host_energy + ret_sob.overhead_host_energy);
+#endif
   }
 
-  auto ending_energy = sample_energy_consumption(SAMPLING_TIME);
-
-  std::cout << "energy-sample-before[J]: " << (starting_energy) << std::endl;
-  std::cout << "energy-sample-after[J]: "  << (ending_energy) << std::endl;
-  std::cout << "energy-sample-delta[J]: "  << std::abs(ending_energy - starting_energy) << std::endl;
-  std::cout << "energy-sample-time[ms]: " << SAMPLING_TIME << std::endl;
   print_metrics(total_times, "total-time", "ms");
   print_metrics(total_times, "kernel-time", "ms");
   print_metrics(device_consumptions, "device-energy", "J");
