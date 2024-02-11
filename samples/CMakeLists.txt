@@ -12,6 +12,35 @@ add_executable(saxpy saxpy/saxpy.cpp)
 add_executable(concurrent_matmul concurrent_matmul/concurrent_matmul.cpp)
 add_executable(freq_scale freq_scale/freq_scale.cpp)
 add_executable(freq_change freq_change/freq_change.cpp)
+add_executable(freq_overhead freq_overhead/freq_overhead.cpp)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/run.sh
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/samples/freq_overhead/run.sh ${CMAKE_CURRENT_BINARY_DIR}/run.sh
+  DEPENDS ${CMAKE_SOURCE_DIR}/samples/freq_overhead/run.sh
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/parse.py
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/samples/freq_overhead/parse.py ${CMAKE_CURRENT_BINARY_DIR}/parse.py
+  DEPENDS ${CMAKE_SOURCE_DIR}/samples/freq_overhead/parse.py
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/plot.py
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/samples/freq_overhead/plot.py ${CMAKE_CURRENT_BINARY_DIR}/plot.py
+  DEPENDS ${CMAKE_SOURCE_DIR}/samples/freq_overhead/plot.py
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Brommy.bmp
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/samples/freq_overhead/Brommy.bmp ${CMAKE_CURRENT_BINARY_DIR}/Brommy.bmp
+  DEPENDS ${CMAKE_SOURCE_DIR}/samples/freq_overhead/Brommy.bmp
+)
+
+add_custom_target(copy_scripts ALL
+  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/run.sh ${CMAKE_CURRENT_BINARY_DIR}/parse.py ${CMAKE_CURRENT_BINARY_DIR}/plot.py ${CMAKE_CURRENT_BINARY_DIR}/Brommy.bmp
+)
 
 get_directory_property(all_targets BUILDSYSTEM_TARGETS)
 
