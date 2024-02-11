@@ -23,29 +23,29 @@ x_labels = [f'{x + x}' for x in data['n_kernels']]
 # plotting time
 df = pd.DataFrame()
 df['n_kernels'] = data['n_kernels']
-df['app_total_time'] = data['app_total_time_Average'] - data['app_freq_change_time_overhead_Average']
-df['app_total_time_err'] = data['app_kernel_time_Stdev']
+df['app_kernel_time'] = data['app_kernel_time_Average']
+df['app_kernel_time_err'] = data['app_kernel_time_Stdev']
 df['app_overhead_time'] = data['app_freq_change_time_overhead_Average']
 df['app_overhead_time_err'] = data['app_freq_change_time_overhead_Stdev']
 
-df['phase_total_time'] = data['phase_total_time_Average'] - data['phase_freq_change_time_overhead_Average']
-df['phase_total_time_err'] = data['phase_kernel_time_Stdev'] 
+df['phase_kernel_time'] = data['phase_kernel_time_Average']
+df['phase_kernel_time_err'] = data['phase_kernel_time_Stdev'] 
 df['phase_overhead_time'] = data['phase_freq_change_time_overhead_Average']
 df['phase_overhead_time_err'] = data['phase_freq_change_time_overhead_Stdev']
 
-df['kernel_total_time'] = data['kernel_total_time_Average'] - data['kernel_freq_change_time_overhead_Average']
-df['kernel_total_time_err'] = data['kernel_kernel_time_Stdev'] 
+df['kernel_kernel_time'] = data['kernel_kernel_time_Average']
+df['kernel_kernel_time_err'] = data['kernel_kernel_time_Stdev'] 
 df['kernel_overhead_time'] = data['kernel_freq_change_time_overhead_Average']
 df['kernel_overhead_time_err'] = data['kernel_freq_change_time_overhead_Stdev']
 
-plt.bar(x - bar_width, df['app_total_time'], width=bar_width, color='royalblue', yerr=df['app_total_time_err'])
-plt.bar(x - bar_width, df['app_overhead_time'], width=bar_width, bottom=df['app_total_time'], color='darkorange', yerr=df['app_overhead_time_err'])
+plt.bar(x - bar_width, df['app_kernel_time'], width=bar_width, color='royalblue', yerr=df['app_kernel_time_err'])
+plt.bar(x - bar_width, df['app_overhead_time'], width=bar_width, bottom=df['app_kernel_time'], color='darkorange', yerr=df['app_overhead_time_err'])
 
-plt.bar(x, df['phase_total_time'], width=bar_width, color='royalblue', hatch=PHASE_HATCHES, yerr=df['phase_total_time_err'])
-plt.bar(x, df['phase_overhead_time'], width=bar_width, bottom=df['phase_total_time'],  hatch=PHASE_HATCHES, color='darkorange', yerr=df['phase_overhead_time_err'])
+plt.bar(x, df['phase_kernel_time'], width=bar_width, color='royalblue', hatch=PHASE_HATCHES, yerr=df['phase_kernel_time_err'])
+plt.bar(x, df['phase_overhead_time'], width=bar_width, bottom=df['phase_kernel_time'],  hatch=PHASE_HATCHES, color='darkorange', yerr=df['phase_overhead_time_err'])
 
-plt.bar(x + bar_width, df['kernel_total_time'], width=bar_width, color='royalblue', hatch=KERNEL_HATCHES, yerr=df['kernel_total_time_err'])
-plt.bar(x + bar_width, df['kernel_overhead_time'], width=bar_width, bottom=df['kernel_total_time'],  hatch=KERNEL_HATCHES, color='darkorange', yerr=df['kernel_overhead_time_err'])
+plt.bar(x + bar_width, df['kernel_kernel_time'], width=bar_width, color='royalblue', hatch=KERNEL_HATCHES, yerr=df['kernel_kernel_time_err'])
+plt.bar(x + bar_width, df['kernel_overhead_time'], width=bar_width, bottom=df['kernel_kernel_time'],  hatch=KERNEL_HATCHES, color='darkorange', yerr=df['kernel_overhead_time_err'])
 
 
 legend = [Patch(facecolor='royalblue', label='Computation Time'), 

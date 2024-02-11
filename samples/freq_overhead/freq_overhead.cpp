@@ -355,6 +355,15 @@ int main(int argc, char** argv) {
   std::vector<synergy::energy> freq_change_device_energy_overheads;
   std::vector<synergy::energy> freq_change_host_energy_overheads;
 
+  { // dry_run
+    synergy::queue q {sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}}};
+    MatMul matmul_kernel{q, matmul_size};
+    Sobel sobel_kernel{q, sobel_size};
+    launch_kernel(q, freq_matmul, policy, true, num_iters, matmul_kernel);
+    launch_kernel(q, freq_sobel, policy, false, num_iters, sobel_kernel);
+    q.wait_and_throw(); // wait for all kernels to finish
+  }
+
   for (int i = 0; i < num_runs; i++) {
     synergy::queue q {sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}}};
     MatMul matmul_kernel{q, matmul_size};
@@ -387,7 +396,7 @@ int main(int argc, char** argv) {
   }
 
   print_metrics(total_times, "total-time", "ms");
-  print_metrics(total_times, "kernel-time", "ms");
+  print_metrics(kernel_times, "kernel-time", "ms");
   print_metrics(device_consumptions, "device-energy", "J");
   print_metrics(host_consumptions, "host-energy", "J");
   print_metrics(freq_change_time_overheads, "freq-change-time-overhead", "ms");
