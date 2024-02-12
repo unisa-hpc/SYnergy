@@ -257,6 +257,13 @@ void print_metrics(std::vector<T> values, std::string label, std::string unit = 
     std::cout << label << "-median[" << unit << "]: " << -1 << std::endl;
     return;
   }
+  std::cout << label << "[" << unit << "]: [ ";
+  for (auto val : values) {
+    std::cout << val << " ";
+  }
+  std::cout << "]" << std::endl;
+
+  std::sort(values.begin(), values.end());
   T avg = std::accumulate(values.begin(), values.end(), 0.0) / values.size();
   // stdev
   T accum = 0.0;
@@ -268,11 +275,6 @@ void print_metrics(std::vector<T> values, std::string label, std::string unit = 
   T min = *std::min_element(values.begin(), values.end());
   T median = values[values.size() / 2];
 
-  std::cout << label << "[" << unit << "]: [ ";
-  for (auto val : values) {
-    std::cout << val << " ";
-  }
-  std::cout << "]" << std::endl;
   std::cout << label << "-avg[" << unit << "]: " << avg << std::endl;
   std::cout << label << "-stdev[" << unit << "]: " << stdev << std::endl;
   std::cout << label << "-max[" << unit << "]: " << max << std::endl;
