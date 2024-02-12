@@ -55,9 +55,7 @@ public:
   }
 
   inline energy get_energy_usage(nvml::device_handle handle) const {
-    unsigned long long energy;
-    check(nvmlDeviceGetTotalEnergyConsumption(handle, &energy)); // millijoules
-    return energy * 1000;                                        // return microjoules
+    throw std::runtime_error{"synergy " + std::string(nvml::name) + " wrapper error: get_energy_usage is not supported"};
   }
 
   inline std::vector<frequency> get_supported_core_frequencies(nvml::device_handle handle) const {
