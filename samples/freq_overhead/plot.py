@@ -84,12 +84,12 @@ plt.clf()
 # plotting energy
 df = pd.DataFrame()
 df['n_kernels'] = data1['n_kernels']
-df['app_energy1'] = data1['app_device_energy_Average']
-df['app_energy_err1'] = data1['app_device_energy_Stdev']
-df['phase_energy1'] = data1['phase_device_energy_Average']
-df['phase_energy_err1'] = data1['phase_device_energy_Stdev']
-df['kernel_energy1'] = data1['kernel_device_energy_Average']
-df['kernel_energy_err1'] = data1['kernel_device_energy_Stdev']
+df['app_energy1'] = data1['app_kernel_energy_Average']
+df['app_energy_err1'] = data1['app_kernel_energy_Stdev']
+df['phase_energy1'] = data1['phase_kernel_energy_Average']
+df['phase_energy_err1'] = data1['phase_kernel_energy_Stdev']
+df['kernel_energy1'] = data1['kernel_kernel_energy_Average']
+df['kernel_energy_err1'] = data1['kernel_kernel_energy_Stdev']
 df['app_energy2'] = data2['app_device_energy_Average'] - data1['app_device_energy_Average']
 df['app_energy_err2'] = data2['app_device_energy_Stdev']
 df['phase_energy2'] = data2['phase_device_energy_Average'] - data1['phase_device_energy_Average']
