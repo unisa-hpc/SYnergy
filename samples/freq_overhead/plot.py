@@ -99,7 +99,7 @@ plt.xlabel('Num. Kernel Calls')
 plt.ylabel('Time (ms)')
 
 plt.tight_layout()
-plt.savefig('time_overhead.pdf', bbox_inches="tight")
+plt.savefig('TimeOverhead.pdf', bbox_inches="tight")
 
 plt.clf()
 
@@ -150,4 +150,4 @@ plt.xlabel('Num. Kernel Calls')
 plt.ylabel('Energy (J)')
 
 plt.tight_layout()
-plt.savefig('energy_overhead.pdf', bbox_inches="tight")
+plt.savefig('EnergyOverhead.pdf', bbox_inches="tight")
