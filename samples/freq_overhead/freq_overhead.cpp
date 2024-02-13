@@ -8,6 +8,102 @@
 
 constexpr size_t SAMPLING_TIME = 2000; // milliseconds
 
+inline void swap(sycl::float4 A[], int i, int j) {
+  A[i] = fmin(A[i], A[j]);
+  A[j] = fmax(A[i], A[j]);
+}
+
+class Median {
+public:
+  synergy::queue& q;
+  size_t size;
+  std::vector<sycl::float4> input;
+  std::vector<sycl::float4> output;
+  std::shared_ptr<sycl::buffer<sycl::float4, 2>> input_buf;
+  std::shared_ptr<sycl::buffer<sycl::float4, 2>> output_buf;
+
+  Median(synergy::queue& q, size_t size) : q{q}, size{size} {
+    input.resize(size * size);
+    load_bitmap_mirrored("./Brommy.bmp", size, input);
+    output.resize(size * size);
+    input_buf = std::make_shared<sycl::buffer<sycl::float4, 2>>(input.data(), sycl::range<2>{size, size});
+    output_buf = std::make_shared<sycl::buffer<sycl::float4, 2>>(output.data(), sycl::range<2>{size, size});
+  }
+
+  sycl::event operator() () {
+    return q.submit([&](sycl::handler& cgh) {
+      auto in = input_buf->get_access<sycl::access::mode::read>(cgh);
+      auto out = output_buf->get_access<sycl::access::mode::discard_write>(cgh);
+      sycl::range<2> ndrange{size, size};
+
+      cgh.parallel_for<class MedianFilterBenchKernel>(
+      ndrange, [in, out, size_ = size, num_iters = 1](sycl::id<2> gid) {
+        int x = gid[0];
+        int y = gid[1];
+
+        // Optimization note: this array can be prefetched in local memory, TODO
+        for(size_t i = 0; i < num_iters; i++) {
+          sycl::float4 window[9];
+
+          int k = 0;
+          for(int i = -1; i < 2; i++)
+            for(int j = -1; j < 2; j++) {
+              uint xs = sycl::min(
+                  sycl::max(x + j, 0), static_cast<int>(size_ - 1)); // borders are handled here with extended values
+              uint ys = sycl::min(sycl::max(y + i, 0), static_cast<int>(size_ - 1));
+              window[k] = in[{xs, ys}];
+              k++;
+            }
+
+          // (channel-wise) median selection using bitonic sorting
+          // the following network is used (Bose-Nelson algorithm):
+          // [[0,1],[2,3],[4,5],[7,8]]
+          // [[0,2],[1,3],[6,8]]
+          // [[1,2],[6,7],[5,8]]
+          // [[4,7],[3,8]]
+          // [[4,6],[5,7]]
+          // [[5,6],[2,7]]
+          // [[0,5],[1,6],[3,7]]
+          // [[0,4],[1,5],[3,6]]
+          // [[1,4],[2,5]]
+          // [[2,4],[3,5]]
+          // [[3,4]]
+          // se also http://pages.ripco.net/~jgamble/nw.html
+          swap(window, 0, 1);
+          swap(window, 2, 3);
+          swap(window, 0, 2);
+          swap(window, 1, 3);
+          swap(window, 1, 2);
+          swap(window, 4, 5);
+          swap(window, 7, 8);
+          swap(window, 6, 8);
+          swap(window, 6, 7);
+          swap(window, 4, 7);
+          swap(window, 4, 6);
+          swap(window, 5, 8);
+          swap(window, 5, 7);
+          swap(window, 5, 6);
+          swap(window, 0, 5);
+          swap(window, 0, 4);
+          swap(window, 1, 6);
+          swap(window, 1, 5);
+          swap(window, 1, 4);
+          swap(window, 2, 7);
+          swap(window, 3, 8);
+          swap(window, 3, 7);
+          swap(window, 2, 5);
+          swap(window, 2, 4);
+          swap(window, 3, 6);
+          swap(window, 3, 5);
+          swap(window, 3, 4);
+
+          out[gid] = window[4];
+        }
+      });
+    });
+  }
+};
+
 class Sobel {
 public:
   synergy::queue& q;
@@ -281,28 +377,20 @@ void print_metrics(std::vector<T> values, std::string label, std::string unit = 
   std::cout << label << "-min[" << unit << "]: " << min << std::endl;
   std::cout << label << "-median[" << unit << "]: " << median << std::endl;
 }
-
-
 struct FreqChangeCost {
   double kernel_time;
   double overhead_time;
-  synergy::energy overhead_device_energy;
-  synergy::energy overhead_host_energy;
+  synergy::energy kernel_energy;
 };
 
 template<typename T>
 FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqChangePolicy policy, bool is_first, size_t num_iters, T& kernel) {
   std::chrono::high_resolution_clock::time_point overhead_start_time, overhead_end_time;
-  synergy::energy overhead_start_energy_device, overhead_end_energy_device, overhead_start_energy_host, overhead_end_energy_host;
+  synergy::energy kernel_energy {0};
   double overhead_time {0}, kernel_time{0};
-  synergy::energy overhead_device_energy {0}, overhead_host_energy {0};
   for (int it = 0; it < num_iters; it++) {
     if ((it == 0 && ((is_first && policy == FreqChangePolicy::APP) || (policy == FreqChangePolicy::PHASE))) || policy == FreqChangePolicy::KERNEL) {
       overhead_start_time = std::chrono::high_resolution_clock::now();
-      overhead_start_energy_device = q.device_energy_consumption();
-#ifdef SYNERGY_HOST_PROFILING
-      overhead_start_energy_host = q.host_energy_consumption();
-#endif
       auto cfe = q.submit(0, freq, [&](sycl::handler& cgh){
         cgh.single_task([=](){
           // Do nothing
@@ -310,31 +398,24 @@ FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqCha
       }); // Set frequency
       cfe.wait();
       overhead_end_time = std::chrono::high_resolution_clock::now();
-      overhead_end_energy_device = q.device_energy_consumption();
-#ifdef SYNERGY_HOST_PROFILING
-      overhead_end_energy_host = q.host_energy_consumption();
-#endif
       overhead_time += std::chrono::duration_cast<std::chrono::milliseconds>(overhead_end_time - overhead_start_time).count();
-      overhead_device_energy += overhead_end_energy_device - overhead_start_energy_device;
-#ifdef SYNERGY_HOST_PROFILING
-      overhead_host_energy += overhead_end_energy_host - overhead_start_energy_host;
-#endif
+      kernel_energy += q.kernel_energy_consumption(cfe);
     }
     
     auto e = kernel(); // Kernel Launch
     e.wait();
     kernel_time += (e.template get_profiling_info<sycl::info::event_profiling::command_end>() - e.template get_profiling_info<sycl::info::event_profiling::command_start>()) / 1000000; // to milliseconds
   }
-  return {kernel_time, overhead_time, overhead_device_energy, overhead_host_energy};
+  return {kernel_time, overhead_time, kernel_energy};
 }
 
 int main(int argc, char** argv) {
   synergy::frequency freq_matmul = 0;
-  synergy::frequency freq_sobel = 0;
+  synergy::frequency freq_median = 0;
   FreqChangePolicy policy;
-  size_t num_iters, num_runs, matmul_size, sobel_size;
+  size_t num_iters, num_runs, matmul_size, median_size;
   if (argc < 8) {
-    std::cerr << "Usage: " << argv[0] << " <policy> <num-runs> <num-iters> <matmul_size> <sobel_size> <freq_matmul> <freq_sobel>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " <policy> <num-runs> <num-iters> <matmul_size> <median_size> <freq_matmul> <freq_median>" << std::endl;
     exit(1);
   }
 
@@ -345,36 +426,35 @@ int main(int argc, char** argv) {
   num_runs = std::stoi(argv[2]);
   num_iters = std::stoi(argv[3]);
   matmul_size = std::stoi(argv[4]);
-  sobel_size = std::stoi(argv[5]);
+  median_size = std::stoi(argv[5]);
   freq_matmul = std::stoi(argv[6]);
-  freq_sobel = std::stoi(argv[7]);
+  freq_median = std::stoi(argv[7]);
 
   std::vector<double> total_times;
   std::vector<double> kernel_times;
   std::vector<synergy::energy> device_consumptions;
   std::vector<synergy::energy> host_consumptions;
   std::vector<double> freq_change_time_overheads;
-  std::vector<synergy::energy> freq_change_device_energy_overheads;
-  std::vector<synergy::energy> freq_change_host_energy_overheads;
+  std::vector<synergy::energy> kernel_energy;
 
   { // dry_run
     synergy::queue q {sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}}};
     MatMul matmul_kernel{q, matmul_size};
-    Sobel sobel_kernel{q, sobel_size};
+    Median median_kernel{q, median_size};
     launch_kernel(q, freq_matmul, policy, true, num_iters, matmul_kernel);
-    launch_kernel(q, freq_sobel, policy, false, num_iters, sobel_kernel);
+    launch_kernel(q, freq_median, policy, false, num_iters, median_kernel);
     q.wait_and_throw(); // wait for all kernels to finish
   }
 
   for (int i = 0; i < num_runs; i++) {
     synergy::queue q {sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}}};
     MatMul matmul_kernel{q, matmul_size};
-    Sobel sobel_kernel{q, sobel_size};
+    Median median_kernel{q, median_size};
     auto start_time = std::chrono::high_resolution_clock::now();
 
     // launch kernels
     auto ret_mat = launch_kernel(q, freq_matmul, policy, true, num_iters, matmul_kernel);
-    auto ret_sob = launch_kernel(q, freq_sobel, policy, false, num_iters, sobel_kernel);
+    auto ret_sob = launch_kernel(q, freq_median, policy, false, num_iters, median_kernel);
     q.wait_and_throw(); // wait for all kernels to finish
 
     auto end_time = std::chrono::high_resolution_clock::now();
@@ -382,6 +462,7 @@ int main(int argc, char** argv) {
     total_times.push_back(duration);
 
     kernel_times.push_back(ret_mat.kernel_time + ret_sob.kernel_time);
+    kernel_energy.push_back(ret_mat.kernel_energy + ret_sob.kernel_energy);
 
     auto device_consumption = q.device_energy_consumption();
     device_consumptions.push_back(device_consumption);
@@ -391,17 +472,13 @@ int main(int argc, char** argv) {
     host_consumptions.push_back(host_consumption);
 #endif
     freq_change_time_overheads.push_back(ret_mat.overhead_time + ret_sob.overhead_time);
-    freq_change_device_energy_overheads.push_back(ret_mat.overhead_device_energy + ret_sob.overhead_device_energy);
-#ifdef SYNERGY_HOST_PROFILING
-    freq_change_host_energy_overheads.push_back(ret_mat.overhead_host_energy + ret_sob.overhead_host_energy);
-#endif
+    
   }
 
   print_metrics(total_times, "total-time", "ms");
   print_metrics(kernel_times, "kernel-time", "ms");
   print_metrics(device_consumptions, "device-energy", "J");
   print_metrics(host_consumptions, "host-energy", "J");
+  print_metrics(kernel_energy, "kernel-energy", "J");
   print_metrics(freq_change_time_overheads, "freq-change-time-overhead", "ms");
-  print_metrics(freq_change_device_energy_overheads, "freq-change-device-energy-overhead", "J");
-  print_metrics(freq_change_host_energy_overheads, "freq-change-host-energy-overhead", "J");
 }

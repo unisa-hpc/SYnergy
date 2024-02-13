@@ -37,11 +37,11 @@ echo "Running freq_overhead for $arch" > ./output.log
 for n_iters in 4 8 16; do
   echo "Running freq_overhead for $n_iters iterations" >> ./output.log
   echo "Policy: app" >> ./output.log
-  $SCRIPT_DIR/freq_overhead app 20 $n_iters 1024 2048 487 487 >> ./output.log
+  $SCRIPT_DIR/freq_overhead app 10 $n_iters 1024 2048 705 705 >> ./output.log
   echo "Policy: phase" >> ./output.log
-  $SCRIPT_DIR/freq_overhead phase 20 $n_iters 1024 2048 1117 187 >> ./output.log
+  $SCRIPT_DIR/freq_overhead phase 10 $n_iters 1024 2048 1110 645 >> ./output.log
   echo "Policy: kernel" >> ./output.log
-  $SCRIPT_DIR/freq_overhead kernel 20 $n_iters 1024 2048 1117 187 >> ./output.log
+  $SCRIPT_DIR/freq_overhead kernel 10 $n_iters 1024 2048 1110 645 >> ./output.log
 done
 
 reset_freq
