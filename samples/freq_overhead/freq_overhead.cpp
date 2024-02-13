@@ -367,8 +367,8 @@ void print_metrics(std::vector<T> values, std::string label, std::string unit = 
     accum += (d - avg) * (d - avg);
   });
   T stdev = sqrt(accum / (values.size() - 1));
-  T max = *std::max_element(values.begin(), values.end());
-  T min = *std::min_element(values.begin(), values.end());
+  T max = values[values.size() - 1];
+  T min = values[0];
   T median = values[values.size() / 2];
 
   std::cout << label << "-avg[" << unit << "]: " << avg << std::endl;
@@ -399,12 +399,12 @@ FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqCha
       cfe.wait();
       overhead_end_time = std::chrono::high_resolution_clock::now();
       overhead_time += std::chrono::duration_cast<std::chrono::milliseconds>(overhead_end_time - overhead_start_time).count();
-      kernel_energy += q.kernel_energy_consumption(cfe);
     }
     
     auto e = kernel(); // Kernel Launch
     e.wait();
     kernel_time += (e.template get_profiling_info<sycl::info::event_profiling::command_end>() - e.template get_profiling_info<sycl::info::event_profiling::command_start>()) / 1000000; // to milliseconds
+    kernel_energy += q.kernel_energy_consumption(e);
   }
   return {kernel_time, overhead_time, kernel_energy};
 }
