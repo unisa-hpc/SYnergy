@@ -2,11 +2,21 @@
 
 SUPPORTED_ARCHS=" intel cuda "
 arch="cuda"
+first_iters="1"
+second_iters="1"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --platform=*)
       arch="${1#*=}"
+      shift
+      ;;
+    --first-iters=*)
+      first_iters="${1#*=}"
+      shift
+      ;;
+    --second-iters=*)
+      second_iters="${1#*=}"
       shift
       ;;
     *)
@@ -22,6 +32,7 @@ function reset_freq {
     intel_gpu_frequency -d
   elif [[ "$arch" = "cuda" ]]; then
     nvidia-smi -rac > /dev/null
+    nvidia-smi -rgc > /dev/null
   fi
 }
 
@@ -37,11 +48,11 @@ echo "Running freq_overhead for $arch" > ./output.log
 for n_iters in 4 8 16; do
   echo "Running freq_overhead for $n_iters iterations" >> ./output.log
   echo "Policy: app" >> ./output.log
-  $SCRIPT_DIR/freq_overhead app 10 $n_iters 1024 2048 705 705 >> ./output.log
+  $SCRIPT_DIR/freq_overhead app 10 $n_iters 1024 2048 705 705 $first_iters $second_iters >> ./output.log
   echo "Policy: phase" >> ./output.log
-  $SCRIPT_DIR/freq_overhead phase 10 $n_iters 1024 2048 1110 645 >> ./output.log
+  $SCRIPT_DIR/freq_overhead phase 10 $n_iters 1024 2048 1110 645 $first_iters $second_iters >> ./output.log
   echo "Policy: kernel" >> ./output.log
-  $SCRIPT_DIR/freq_overhead kernel 10 $n_iters 1024 2048 1110 645 >> ./output.log
+  $SCRIPT_DIR/freq_overhead kernel 10 $n_iters 1024 2048 1110 645 $first_iters $second_iters >> ./output.log
 done
 
 reset_freq
