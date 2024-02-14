@@ -30,14 +30,14 @@ public:
     output_buf = std::make_shared<sycl::buffer<sycl::float4, 2>>(output.data(), sycl::range<2>{size, size});
   }
 
-  sycl::event operator() () {
+  sycl::event operator() (size_t num_iters) {
     return q.submit([&](sycl::handler& cgh) {
       auto in = input_buf->get_access<sycl::access::mode::read>(cgh);
       auto out = output_buf->get_access<sycl::access::mode::discard_write>(cgh);
       sycl::range<2> ndrange{size, size};
 
       cgh.parallel_for<class MedianFilterBenchKernel>(
-      ndrange, [in, out, size_ = size, num_iters = 1](sycl::id<2> gid) {
+      ndrange, [in, out, size_ = size, num_iters = num_iters](sycl::id<2> gid) {
         int x = gid[0];
         int y = gid[1];
 
@@ -121,7 +121,7 @@ public:
     output_buf = std::make_shared<sycl::buffer<sycl::float4, 2>>(output.data(), sycl::range<2>{size, size});
   }
 
-  sycl::event operator() () {
+  sycl::event operator() (size_t num_iters) {
     return q.submit([&](sycl::handler& cgh) {
       auto in = input_buf->get_access<sycl::access::mode::read>(cgh);
       auto out = output_buf->get_access<sycl::access::mode::discard_write>(cgh);
@@ -131,7 +131,7 @@ public:
       const float kernel[] = {1, 0, -1, 2, 0, -2, 1, 0, -1};
 
       cgh.parallel_for<class SobelBenchKernel>(
-        ndrange, [in, out, kernel, size_ = size, num_iters=2](sycl::id<2> gid) {
+        ndrange, [in, out, kernel, size_ = size, num_iters=num_iters](sycl::id<2> gid) {
           int x = gid[0];
           int y = gid[1];
 
@@ -204,7 +204,7 @@ public:
     c_buf = std::make_shared<sycl::buffer<int, 2>>(c.data(), sycl::range<2>{size, size});
   }
 
-  sycl::event operator() () {
+  sycl::event operator() (size_t num_iters) {
     return q.submit([&](sycl::handler& h) {
       sycl::accessor a_acc{*(a_buf.get()), h, sycl::read_only};
       sycl::accessor b_acc{*(b_buf.get()), h, sycl::read_only};
@@ -213,12 +213,14 @@ public:
       sycl::range<2> grid{size, size};
       sycl::range<2> block{size < 32 ? size : 32, size < 32 ? size : 32};
 
-      h.parallel_for(sycl::nd_range<2>(grid, block), [=, size=size](sycl::nd_item<2> idx) {
+      h.parallel_for(sycl::nd_range<2>(grid, block), [=, size=size, num_iters=num_iters](sycl::nd_item<2> idx) {
         int i = idx.get_global_id(0);
         int j = idx.get_global_id(1);
-        c_acc[i][j] = 0.0f;
-        for (size_t k = 0; k < size; k++) {
-          c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
+        for (int _ = 0; _ < num_iters; _++){
+          c_acc[i][j] = 0.0f;
+          for (size_t k = 0; k < size; k++) {
+            c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
+          }
         }
       });
     });
@@ -264,7 +266,7 @@ public:
     buf_result = std::make_shared<sycl::buffer<sycl::float4>>(result.data(), sycl::range<1>{size});
   }
 
-  sycl::event operator() () {
+  sycl::event operator() (size_t num_iters) {
     return q.submit([&](sycl::handler& cgh) {
       auto ma_acc = buf_ma->get_access<sycl::access::mode::read>(cgh);
       auto b_acc = buf_b->get_access<sycl::access::mode::read>(cgh);
@@ -273,7 +275,7 @@ public:
       auto result_acc = buf_result->get_access<sycl::access::mode::write>(cgh);
 
       sycl::range<1> ndrange{size};
-      cgh.parallel_for<class MerseTwisterKernel>(ndrange, [=, length = size, num_iters = 5000](sycl::id<1> id) {
+      cgh.parallel_for<class MerseTwisterKernel>(ndrange, [=, length = size, num_iters=num_iters](sycl::id<1> id) {
         int gid = id[0];
 
         if(gid >= length)
@@ -384,11 +386,11 @@ struct FreqChangeCost {
 };
 
 template<typename T>
-FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqChangePolicy policy, bool is_first, size_t num_iters, T& kernel) {
+FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqChangePolicy policy, bool is_first, size_t n_kernels, size_t n_iters, T& kernel) {
   std::chrono::high_resolution_clock::time_point overhead_start_time, overhead_end_time;
   synergy::energy kernel_energy {0};
   double overhead_time {0}, kernel_time{0};
-  for (int it = 0; it < num_iters; it++) {
+  for (int it = 0; it < n_kernels; it++) {
     if ((it == 0 && ((is_first && policy == FreqChangePolicy::APP) || (policy == FreqChangePolicy::PHASE))) || policy == FreqChangePolicy::KERNEL) {
       overhead_start_time = std::chrono::high_resolution_clock::now();
       auto cfe = q.submit(0, freq, [&](sycl::handler& cgh){
@@ -401,7 +403,7 @@ FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqCha
       overhead_time += std::chrono::duration_cast<std::chrono::milliseconds>(overhead_end_time - overhead_start_time).count();
     }
     
-    auto e = kernel(); // Kernel Launch
+    auto e = kernel(n_iters); // Kernel Launch
     e.wait();
     kernel_time += (e.template get_profiling_info<sycl::info::event_profiling::command_end>() - e.template get_profiling_info<sycl::info::event_profiling::command_start>()) / 1000000; // to milliseconds
     kernel_energy += q.kernel_energy_consumption(e);
@@ -410,12 +412,12 @@ FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqCha
 }
 
 int main(int argc, char** argv) {
-  synergy::frequency freq_matmul = 0;
-  synergy::frequency freq_median = 0;
+  synergy::frequency first_freq = 0;
+  synergy::frequency second_freq = 0;
   FreqChangePolicy policy;
-  size_t num_iters, num_runs, matmul_size, median_size;
+  size_t n_kernels, num_runs, first_size, second_size, first_iters {1}, second_iters {1};
   if (argc < 8) {
-    std::cerr << "Usage: " << argv[0] << " <policy> <num-runs> <num-iters> <matmul_size> <median_size> <freq_matmul> <freq_median>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " <policy> <num-runs> <num-kernels> <first_size> <second_size> <first_freq> <second_freq> [first_iters] [second_iters]" << std::endl;
     exit(1);
   }
 
@@ -424,11 +426,13 @@ int main(int argc, char** argv) {
            (std::string(argv[1]) == "kernel") ? FreqChangePolicy::KERNEL : 
            throw std::runtime_error("Invalid policy");
   num_runs = std::stoi(argv[2]);
-  num_iters = std::stoi(argv[3]);
-  matmul_size = std::stoi(argv[4]);
-  median_size = std::stoi(argv[5]);
-  freq_matmul = std::stoi(argv[6]);
-  freq_median = std::stoi(argv[7]);
+  n_kernels = std::stoi(argv[3]);
+  first_size = std::stoi(argv[4]);
+  second_size = std::stoi(argv[5]);
+  first_freq = std::stoi(argv[6]);
+  second_freq = std::stoi(argv[7]);
+  if (argc > 8) first_iters = std::stoi(argv[8]);
+  if (argc > 9) second_iters = std::stoi(argv[9]);
 
   std::vector<double> total_times;
   std::vector<double> kernel_times;
@@ -439,22 +443,22 @@ int main(int argc, char** argv) {
 
   { // dry_run
     synergy::queue q {sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}}};
-    MatMul matmul_kernel{q, matmul_size};
-    Median median_kernel{q, median_size};
-    launch_kernel(q, freq_matmul, policy, true, num_iters, matmul_kernel);
-    launch_kernel(q, freq_median, policy, false, num_iters, median_kernel);
+    MatMul matmul_kernel{q, first_size};
+    Median median_kernel{q, second_size};
+    launch_kernel(q, first_freq, policy, true, n_kernels, first_iters, matmul_kernel);
+    launch_kernel(q, second_freq, policy, false, n_kernels, second_iters, median_kernel);
     q.wait_and_throw(); // wait for all kernels to finish
   }
 
   for (int i = 0; i < num_runs; i++) {
     synergy::queue q {sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}}};
-    MatMul matmul_kernel{q, matmul_size};
-    Median median_kernel{q, median_size};
+    MatMul matmul_kernel{q, first_size};
+    Median median_kernel{q, second_size};
     auto start_time = std::chrono::high_resolution_clock::now();
 
     // launch kernels
-    auto ret_mat = launch_kernel(q, freq_matmul, policy, true, num_iters, matmul_kernel);
-    auto ret_sob = launch_kernel(q, freq_median, policy, false, num_iters, median_kernel);
+    auto ret_mat = launch_kernel(q, first_freq, policy, true, n_kernels, first_iters, matmul_kernel);
+    auto ret_sob = launch_kernel(q, second_freq, policy, false, n_kernels, second_iters, median_kernel);
     q.wait_and_throw(); // wait for all kernels to finish
 
     auto end_time = std::chrono::high_resolution_clock::now();
