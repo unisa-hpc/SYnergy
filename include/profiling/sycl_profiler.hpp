@@ -144,7 +144,7 @@ private:
 
   inline void set_total_kernel_execution_energy() {
     for (double val : m_profData.kernelEnergyConsumptions) {
-      m_profData.totalKernelTime += val;
+      m_profData.totalKernelEnergy += val;
     }
   }
 
