@@ -10,6 +10,7 @@ option(SYNERGY_CUDA_SUPPORT "Enable CUDA support" OFF)
 option(SYNERGY_ROCM_SUPPORT "Enable ROCm support" OFF)
 option(SYNERGY_LZ_SUPPORT "Enable Level Zero Support" OFF)
 option(SYNERGY_GEOPM_SUPPORT "Enable GEOPM Support" OFF)
+option(SYNERGY_USE_PROFILING_ENERGY "Enable profiling by utilizing energy counter" OFF)
 
 set(SYNERGY_SYCL_IMPL "" CACHE STRING "Select SYCL implementation [OpenSYCL | DPC++]")
 set_property(CACHE SYNERGY_SYCL_IMPL PROPERTY STRINGS "OpenSYCL" "DPC++")
@@ -44,6 +45,10 @@ target_include_directories(synergy INTERFACE include)
 
 option(SYNERGY_DEVICE_PROFILING "Enable device energy consumption profiling" OFF)
 option(SYNERGY_KERNEL_PROFILING "Enable kernel energy consumption profiling" OFF)
+
+if (SYNERGY_USE_PROFILING_ENERGY)
+	target_compile_definitions(synergy INTERFACE SYNERGY_USE_PROFILING_ENERGY)
+endif()
 
 if(SYNERGY_DEVICE_PROFILING)
 	option(SYNERGY_HOST_PROFILING "Enable host energy consumption profiling" OFF)
