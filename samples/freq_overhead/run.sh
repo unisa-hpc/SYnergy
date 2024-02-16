@@ -1,12 +1,13 @@
 #!/bin/bash
 
-SUPPORTED_ARCHS=" intel cuda "
+SUPPORTED_ARCHS=" intel cuda rocm "
 arch="cuda"
 first_iters="1"
 second_iters="1"
-first_freq="1110"
-second_freq="645"
-app_freq="705"
+first_freq="495"
+second_freq="1147"
+app_freq="0"
+n_runs=5
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -65,6 +66,14 @@ function reset_freq {
   elif [[ "$arch" = "cuda" ]]; then
     nvidia-smi -rac > /dev/null
     nvidia-smi -rgc > /dev/null
+  elif [[ "$arch" = "rocm" ]]; then
+    rocm-smi --device=0 --setperflevel auto > /dev/null
+  fi
+}
+
+function init_scaling {
+  if [[ "$arch" = "rocm" ]]; then
+    rocm-smi --device=0 --setperflevel manual > /dev/null
   fi
 }
 
@@ -76,15 +85,19 @@ if [[ $SUPPORTED_ARCHS != *"$arch"* ]]; then
   exit 1
 fi
 
+init_scaling
+
 echo "Running freq_overhead for $arch" > ./output.log
 for n_iters in 4 8 16; do
   echo "Running freq_overhead for $n_iters iterations" >> ./output.log
   echo "Policy: app" >> ./output.log
-  $SCRIPT_DIR/freq_overhead app 10 $n_iters 1024 2048 $app_freq $app_freq $first_iters $second_iters >> ./output.log
+  reset_freq
+  $SCRIPT_DIR/freq_overhead app $n_runs $n_iters 10000000 224280800 $app_freq $app_freq $first_iters $second_iters >> ./output.log
+  init_scaling
   echo "Policy: phase" >> ./output.log
-  $SCRIPT_DIR/freq_overhead phase 10 $n_iters 1024 2048 $first_freq $second_freq $first_iters $second_iters >> ./output.log
+  $SCRIPT_DIR/freq_overhead phase $n_runs $n_iters 10000000 224280800 $first_freq $second_freq $first_iters $second_iters >> ./output.log
   echo "Policy: kernel" >> ./output.log
-  $SCRIPT_DIR/freq_overhead kernel 10 $n_iters 1024 2048 $first_freq $second_freq $first_iters $second_iters >> ./output.log
+  $SCRIPT_DIR/freq_overhead kernel $n_runs $n_iters 10000000 224280800 $first_freq $second_freq $first_iters $second_iters >> ./output.log
 done
 
 reset_freq
