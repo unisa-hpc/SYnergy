@@ -11,6 +11,16 @@ if len(sys.argv) != 3:
 file_path1 = sys.argv[1]
 file_path2 = sys.argv[2]
 
+def lighten_color(color, amount=0.5):
+  import matplotlib.colors as mc
+  import colorsys
+  try:
+    c = mc.cnames[color]
+  except:
+    c = color
+  c = colorsys.rgb_to_hls(*mc.to_rgb(c))
+  return colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
+
 sns.set_theme()
 
 data1 = pd.read_csv(file_path1)
@@ -106,33 +116,56 @@ plt.clf()
 # plotting energy
 df = pd.DataFrame()
 df['n_kernels'] = data1['n_kernels']
-df['app_energy1'] = data1['app_device_energy_Average'] + data1['app_host_energy_Average']
-df['app_energy_err1'] = data1['app_device_energy_Stdev'] + data1['app_host_energy_Stdev']
-df['phase_energy1'] = data1['phase_device_energy_Average'] + data1['phase_host_energy_Average']
-df['phase_energy_err1'] = data1['phase_device_energy_Stdev'] + data1['phase_host_energy_Stdev']
-df['kernel_energy1'] = data1['kernel_device_energy_Average'] + data1['kernel_host_energy_Average']
-df['kernel_energy_err1'] = data1['kernel_device_energy_Stdev'] + data1['kernel_host_energy_Stdev']
-df['app_energy2'] = data2['app_device_energy_Average']  + data2['app_host_energy_Average'] 
-df['app_energy_err2'] = data2['app_device_energy_Stdev'] + data2['app_host_energy_Stdev']
-df['phase_energy2'] = data2['phase_device_energy_Average']  + data2['phase_host_energy_Average'] 
-df['phase_energy_err2'] = data2['phase_device_energy_Stdev'] + data2['phase_host_energy_Stdev']
-df['kernel_energy2'] = data2['kernel_device_energy_Average'] + data2['kernel_host_energy_Average']
-df['kernel_energy_err2'] = data2['kernel_device_energy_Stdev'] + data2['kernel_host_energy_Stdev']
+df['app_energy1'] = data1['app_device_energy_Average'] #+ data1['app_host_energy_Average']
+df['app_energy_err1'] = data1['app_device_energy_Stdev'] #+ data1['app_host_energy_Stdev']
+df['phase_energy1'] = data1['phase_device_energy_Average'] #+ data1['phase_host_energy_Average']
+df['phase_energy_err1'] = data1['phase_device_energy_Stdev'] #+ data1['phase_host_energy_Stdev']
+df['kernel_energy1'] = data1['kernel_device_energy_Average'] #+ data1['kernel_host_energy_Average']
+df['kernel_energy_err1'] = data1['kernel_device_energy_Stdev'] #+ data1['kernel_host_energy_Stdev']
+df['app_energy2'] = data2['app_device_energy_Average']  #+ data2['app_host_energy_Average'] 
+df['app_energy_err2'] = data2['app_device_energy_Stdev'] #+ data2['app_host_energy_Stdev']
+df['phase_energy2'] = data2['phase_device_energy_Average']  #+ data2['phase_host_energy_Average'] 
+df['phase_energy_err2'] = data2['phase_device_energy_Stdev'] #+ data2['phase_host_energy_Stdev']
+df['kernel_energy2'] = data2['kernel_device_energy_Average'] #+ data2['kernel_host_energy_Average']
+df['kernel_energy_err2'] = data2['kernel_device_energy_Stdev'] #+ data2['kernel_host_energy_Stdev']
 
-COLOR1 = 'C0'
-COLOR2 = 'C1'
+df['host_app_energy1'] = data1['app_host_energy_Average']
+df['host_app_energy_err1'] = data1['app_host_energy_Stdev']
+df['host_phase_energy1'] = data1['phase_host_energy_Average']
+df['host_phase_energy_err1'] = data1['phase_host_energy_Stdev']
+df['host_kernel_energy1'] = data1['kernel_host_energy_Average']
+df['host_kernel_energy_err1'] = data1['kernel_host_energy_Stdev']
+df['host_app_energy2'] = data2['app_host_energy_Average'] 
+df['host_app_energy_err2'] = data2['app_host_energy_Stdev']
+df['host_phase_energy2'] = data2['phase_host_energy_Average'] 
+df['host_phase_energy_err2'] = data2['phase_host_energy_Stdev']
+df['host_kernel_energy2'] = data2['kernel_host_energy_Average']
+df['host_kernel_energy_err2'] = data2['kernel_host_energy_Stdev']
+
+COLOR1_1 = 'C0'
+COLOR2_1 = 'C1'
+COLOR1 = lighten_color(COLOR1_1, 1.5)
+COLOR2 = lighten_color(COLOR2_1, 1.5)
 # COLOR3 = 'C2'
+#device energy
+plt.bar(x - bar_width2 - (3 * bar_width2 / 2), df['app_energy1'], width=bar_width2, yerr=df['app_energy_err1'], color=COLOR1)
+plt.bar(x - (3 * bar_width2 / 2), df['app_energy2'], width=bar_width2, yerr=df['app_energy_err2'], color=COLOR2)
 
-plt.bar(x - bar_width2 - (3 * bar_width2 / 2), df['app_energy1'], width=bar_width2, label='Per-App Frequency Change', yerr=df['app_energy_err1'], color=COLOR1)
-plt.bar(x - (3 * bar_width2 / 2), df['app_energy2'], width=bar_width2, label='Per-App Frequency Change', yerr=df['app_energy_err2'], color=COLOR2)
+plt.bar(x + bar_width2 - (3 * bar_width2 / 2), df['phase_energy1'], width=bar_width2, yerr=df['phase_energy_err1'], color=COLOR1, hatch=PHASE_HATCHES)
+plt.bar(x - bar_width2 + (3 * bar_width2 / 2), df['phase_energy2'], width=bar_width2, yerr=df['phase_energy_err2'], color=COLOR2, hatch=PHASE_HATCHES)
 
-plt.bar(x + bar_width2 - (3 * bar_width2 / 2), df['phase_energy1'], width=bar_width2, label='Per-Phase Frequency Change', yerr=df['phase_energy_err1'], color=COLOR1, hatch=PHASE_HATCHES)
-plt.bar(x - bar_width2 + (3 * bar_width2 / 2), df['phase_energy2'], width=bar_width2, label='Per-Phase Frequency Change', yerr=df['phase_energy_err2'], color=COLOR2, hatch=PHASE_HATCHES)
+plt.bar(x + (3 * bar_width2 / 2), df['kernel_energy1'], width=bar_width2, yerr=df['kernel_energy_err1'], color=COLOR1, hatch=KERNEL_HATCHES)
+plt.bar(x + bar_width2 + (3 * bar_width2 / 2), df['kernel_energy2'], width=bar_width2, yerr=df['kernel_energy_err2'], color=COLOR2, hatch=KERNEL_HATCHES)
 
-plt.bar(x + (3 * bar_width2 / 2), df['kernel_energy1'], width=bar_width2, label='Per-Kernel Frequency Change', yerr=df['kernel_energy_err1'], color=COLOR1, hatch=KERNEL_HATCHES)
-plt.bar(x + bar_width2 + (3 * bar_width2 / 2), df['kernel_energy2'], width=bar_width2, label='Per-Kernel Frequency Change', yerr=df['kernel_energy_err2'], color=COLOR2, hatch=KERNEL_HATCHES)
+# host energy
+# plt.bar(x - bar_width2 - (3 * bar_width2 / 2), df['host_app_energy1'], bottom=df['app_energy1'], width=bar_width2, yerr=df['host_app_energy_err1'], color=COLOR1_1)
+# plt.bar(x - (3 * bar_width2 / 2), df['host_app_energy2'], bottom=df['app_energy2'], width=bar_width2, yerr=df['host_app_energy_err2'], color=COLOR2_1)
 
-plt.legend()
+# plt.bar(x + bar_width2 - (3 * bar_width2 / 2), df['host_phase_energy1'], bottom=df['phase_energy1'], width=bar_width2, yerr=df['host_phase_energy_err1'], color=COLOR1_1, hatch=PHASE_HATCHES)
+# plt.bar(x - bar_width2 + (3 * bar_width2 / 2), df['host_phase_energy2'], bottom=df['phase_energy2'], width=bar_width2, yerr=df['host_phase_energy_err2'], color=COLOR2_1, hatch=PHASE_HATCHES)
+
+# plt.bar(x + (3 * bar_width2 / 2), df['host_kernel_energy1'], bottom=df['kernel_energy1'], width=bar_width2, yerr=df['host_kernel_energy_err1'], color=COLOR1_1, hatch=KERNEL_HATCHES)
+# plt.bar(x + bar_width2 + (3 * bar_width2 / 2), df['host_kernel_energy2'], bottom=df['kernel_energy2'], width=bar_width2, yerr=df['host_kernel_energy_err2'], color=COLOR2_1, hatch=KERNEL_HATCHES)
 
 legend = [
           # Patch(facecolor=COLOR2_1, label='GEOPM Computation Time'),
