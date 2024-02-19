@@ -9,8 +9,9 @@ from matplotlib.patches import Patch
 fontdict_val={'fontsize': 8, 'style': 'italic'}
 GEOPM_HATCHES = '///'
 legend_props = {'size': 10}
-text_y_pos = -10
-rotation=0
+text_y_pos = 0
+rotation=20
+padding=15
 bar_width_offset = 0.01
 bar_width = 0.15
 COLOR1 = 'C0'
@@ -63,9 +64,9 @@ plt.bar(x + (3 * bar_width / 2) + bar_width_offset, df['kernel_energy1'], width=
 plt.bar(x + bar_width + (3 * bar_width / 2), df['kernel_energy2'], width=bar_width - bar_width_offset, yerr=df['kernel_energy_err2'], color=COLOR2)
 
 for xv in x:
-  plt.text(xv - (bar_width / 2) - (bar_width * 3 / 2), text_y_pos, "App", fontdict=fontdict_val, ha='center', rotation=rotation)
-  plt.text(xv, text_y_pos, "Phase", fontdict=fontdict_val, ha='center', rotation=rotation)
-  plt.text(xv + (bar_width / 2) + (bar_width * 3 / 2), text_y_pos, "Kernel", fontdict=fontdict_val, ha='center', rotation=rotation)
+  plt.text(xv - (bar_width / 2) - (bar_width * 3 / 2), text_y_pos, "Per-App", fontdict=fontdict_val, ha='center', va='top', rotation=rotation)
+  plt.text(xv, text_y_pos, "Per-Phase", fontdict=fontdict_val, ha='center', va='top', rotation=rotation)
+  plt.text(xv + (bar_width / 2) + (bar_width * 3 / 2), text_y_pos, "Per-Kernel", fontdict=fontdict_val, ha='center', va='top', rotation=rotation)
 
 
 legend = [
@@ -77,7 +78,7 @@ plt.legend(handles=legend, ncol=2, prop = legend_props)
 
 plt.xticks(x, x_labels)
 for tick in plt.gca().xaxis.get_major_ticks():
-  tick.set_pad(10)
+  tick.set_pad(padding)
 plt.xlabel('Num. Kernel Calls')
 plt.ylabel('Energy (J)')
 plt.savefig(outfile, bbox_inches="tight")
