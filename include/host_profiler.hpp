@@ -12,6 +12,11 @@
 #include <filesystem>
 #include <unistd.h>
 
+#ifdef SYNERGY_GEOPM_SUPPORT
+#include <geopm/PlatformIO.hpp>
+#include <geopm/PlatformTopo.hpp>
+#endif
+
 namespace synergy {
 namespace host_profiler {
 namespace detail {
@@ -55,18 +60,15 @@ namespace detail {
     ((path += "/" + std::string(args)) + ...); // fold expression to concatenate the strings
     return path;
   }
-} // namespace detail
-  using namespace detail;
 
   /**
    * @brief Get the energy consumption of the host in microjoules
-   * @details Get the energy consumption of the host in microjoules. The function uses the Powercap
-   * interface to get the energy consumption of the host.
+   * @details Get the energy consumption of the host in microjoules using the Powercap interface.
    * @return A monotonically increasing value representing the energy consumption of the host in
    * microjoules
    * @throws std::runtime_error if the energy file(s) cannot be opened
   */
-  double get_host_energy() {
+  double get_powercap_energy() {
     double energy = 0;
     unsigned long long e;
 
@@ -84,6 +86,25 @@ namespace detail {
     }
 
     return energy;
+  }
+
+} // namespace detail
+  using namespace detail;
+
+  /**
+   * @brief Get the energy consumption of the host in microjoules
+   * @details Get the energy consumption of the host in microjoules.
+   * @return A monotonically increasing value representing the energy consumption of the host in
+   * microjoules
+  */
+  inline double get_host_energy() {
+
+#ifndef SYNERGY_GEOPM_SUPPORT
+    return get_powercap_energy();
+#else
+    double energy = geopm::platform_io().read_signal("CPU_ENERGY", GEOPM_DOMAIN_BOARD, 0);
+    return energy * 1e6; // convert from Joules to microjoules
+#endif
   }
 
 } // namespace host_profiler
