@@ -27,6 +27,7 @@ data1 = pd.read_csv(file_path1)
 data2 = pd.read_csv(file_path2)
 KERNEL_HATCHES = '///'
 PHASE_HATCHES = '..'
+legend_props = {'size': 8}
 
 bar_width1 = 0.15
 bar_width2 = 0.15
@@ -102,7 +103,7 @@ legend = [
           Patch(facecolor=COLOR2_2, label='GEOPM Overhead'),
           ]
 
-legend1 = plt.legend(handles=legend, ncol=2)
+legend1 = plt.legend(handles=legend, ncol=2, prop = legend_props)
 
 plt.xticks(x, x_labels)
 plt.xlabel('Num. Kernel Calls')
@@ -148,39 +149,46 @@ COLOR1 = lighten_color(COLOR1_1, 1.5)
 COLOR2 = lighten_color(COLOR2_1, 1.5)
 # COLOR3 = 'C2'
 #device energy
-plt.bar(x - bar_width2 - (3 * bar_width2 / 2), df['app_energy1'], width=bar_width2, yerr=df['app_energy_err1'], color=COLOR1)
-plt.bar(x - (3 * bar_width2 / 2), df['app_energy2'], width=bar_width2, yerr=df['app_energy_err2'], color=COLOR2)
+plt.bar(x - bar_width2 - (3 * bar_width2 / 2), df['app_energy1'], width=bar_width2, yerr=df['app_energy_err1'], color=COLOR1_1)
+plt.bar(x - (3 * bar_width2 / 2), df['app_energy2'], width=bar_width2, yerr=df['app_energy_err2'], color=COLOR2_1)
 
-plt.bar(x + bar_width2 - (3 * bar_width2 / 2), df['phase_energy1'], width=bar_width2, yerr=df['phase_energy_err1'], color=COLOR1, hatch=PHASE_HATCHES)
-plt.bar(x - bar_width2 + (3 * bar_width2 / 2), df['phase_energy2'], width=bar_width2, yerr=df['phase_energy_err2'], color=COLOR2, hatch=PHASE_HATCHES)
+plt.bar(x + bar_width2 - (3 * bar_width2 / 2), df['phase_energy1'], width=bar_width2, yerr=df['phase_energy_err1'], color=COLOR1_1, hatch=PHASE_HATCHES)
+plt.bar(x - bar_width2 + (3 * bar_width2 / 2), df['phase_energy2'], width=bar_width2, yerr=df['phase_energy_err2'], color=COLOR2_1, hatch=PHASE_HATCHES)
 
-plt.bar(x + (3 * bar_width2 / 2), df['kernel_energy1'], width=bar_width2, yerr=df['kernel_energy_err1'], color=COLOR1, hatch=KERNEL_HATCHES)
-plt.bar(x + bar_width2 + (3 * bar_width2 / 2), df['kernel_energy2'], width=bar_width2, yerr=df['kernel_energy_err2'], color=COLOR2, hatch=KERNEL_HATCHES)
-
-# host energy
-# plt.bar(x - bar_width2 - (3 * bar_width2 / 2), df['host_app_energy1'], bottom=df['app_energy1'], width=bar_width2, yerr=df['host_app_energy_err1'], color=COLOR1_1)
-# plt.bar(x - (3 * bar_width2 / 2), df['host_app_energy2'], bottom=df['app_energy2'], width=bar_width2, yerr=df['host_app_energy_err2'], color=COLOR2_1)
-
-# plt.bar(x + bar_width2 - (3 * bar_width2 / 2), df['host_phase_energy1'], bottom=df['phase_energy1'], width=bar_width2, yerr=df['host_phase_energy_err1'], color=COLOR1_1, hatch=PHASE_HATCHES)
-# plt.bar(x - bar_width2 + (3 * bar_width2 / 2), df['host_phase_energy2'], bottom=df['phase_energy2'], width=bar_width2, yerr=df['host_phase_energy_err2'], color=COLOR2_1, hatch=PHASE_HATCHES)
-
-# plt.bar(x + (3 * bar_width2 / 2), df['host_kernel_energy1'], bottom=df['kernel_energy1'], width=bar_width2, yerr=df['host_kernel_energy_err1'], color=COLOR1_1, hatch=KERNEL_HATCHES)
-# plt.bar(x + bar_width2 + (3 * bar_width2 / 2), df['host_kernel_energy2'], bottom=df['kernel_energy2'], width=bar_width2, yerr=df['host_kernel_energy_err2'], color=COLOR2_1, hatch=KERNEL_HATCHES)
+plt.bar(x + (3 * bar_width2 / 2), df['kernel_energy1'], width=bar_width2, yerr=df['kernel_energy_err1'], color=COLOR1_1, hatch=KERNEL_HATCHES)
+plt.bar(x + bar_width2 + (3 * bar_width2 / 2), df['kernel_energy2'], width=bar_width2, yerr=df['kernel_energy_err2'], color=COLOR2_1, hatch=KERNEL_HATCHES)
 
 legend = [
           # Patch(facecolor=COLOR2_1, label='GEOPM Computation Time'),
           Patch(facecolor='none', edgecolor='k', label='Per-App Freq. Change'),
-          Patch(facecolor='none', edgecolor='k', hatch=PHASE_HATCHES + ".", label='Per-Phase Freq. Change'),
+          Patch(facecolor='none', edgecolor='k', hatch=PHASE_HATCHES + "..", label='Per-Phase Freq. Change'),
           Patch(facecolor='none', edgecolor='k', hatch=KERNEL_HATCHES, label='Per-Kernel Freq. Change'),
-          Patch(facecolor=COLOR1, label='Native'), 
-          Patch(facecolor=COLOR2, label='GEOPM'),
+          Patch(facecolor=COLOR1_1, label='Native'), 
+          Patch(facecolor=COLOR2_1, label='GEOPM'),
           ]
 
-legend1 = plt.legend(handles=legend, ncol=2)
+plt.legend(handles=legend, ncol=2, prop = legend_props)
+
+plt.xticks(x, x_labels)
+plt.xlabel('Num. Kernel Calls')
+plt.ylabel('Energy (J)')
+plt.savefig('DeviceEnergyOverhead.pdf', bbox_inches="tight")
+plt.clf()
+
+# host energy
+plt.bar(x - bar_width2 - (3 * bar_width2 / 2), df['host_app_energy1'], width=bar_width2, yerr=df['host_app_energy_err1'], color=COLOR1_1)
+plt.bar(x - (3 * bar_width2 / 2), df['host_app_energy2'], width=bar_width2, yerr=df['host_app_energy_err2'], color=COLOR2_1)
+
+plt.bar(x + bar_width2 - (3 * bar_width2 / 2), df['host_phase_energy1'], width=bar_width2, yerr=df['host_phase_energy_err1'], color=COLOR1_1, hatch=PHASE_HATCHES)
+plt.bar(x - bar_width2 + (3 * bar_width2 / 2), df['host_phase_energy2'], width=bar_width2, yerr=df['host_phase_energy_err2'], color=COLOR2_1, hatch=PHASE_HATCHES)
+
+plt.bar(x + (3 * bar_width2 / 2), df['host_kernel_energy1'], width=bar_width2, yerr=df['host_kernel_energy_err1'], color=COLOR1_1, hatch=KERNEL_HATCHES)
+plt.bar(x + bar_width2 + (3 * bar_width2 / 2), df['host_kernel_energy2'], width=bar_width2, yerr=df['host_kernel_energy_err2'], color=COLOR2_1, hatch=KERNEL_HATCHES)
+
+plt.legend(handles=legend, ncol=2, prop = legend_props)
 
 plt.xticks(x, x_labels)
 plt.xlabel('Num. Kernel Calls')
 plt.ylabel('Energy (J)')
 
-plt.tight_layout()
-plt.savefig('EnergyOverhead.pdf', bbox_inches="tight")
+plt.savefig('HostEnergyOverhead.pdf', bbox_inches="tight")

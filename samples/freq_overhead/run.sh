@@ -4,8 +4,8 @@ SUPPORTED_ARCHS=" intel cuda rocm "
 arch="cuda"
 first_iters="1"
 second_iters="1"
-first_freq="495"
-second_freq="1147"
+first_freq="1110"
+second_freq="645"
 app_freq="0"
 n_runs=5
 
@@ -92,12 +92,12 @@ for n_iters in 4 8 16; do
   echo "Running freq_overhead for $n_iters iterations" >> ./output.log
   echo "Policy: app" >> ./output.log
   reset_freq
-  $SCRIPT_DIR/freq_overhead app $n_runs $n_iters 10000000 224280800 $app_freq $app_freq $first_iters $second_iters >> ./output.log
+  $SCRIPT_DIR/freq_overhead app $n_runs $n_iters 1024 2048 $app_freq $app_freq $first_iters $second_iters >> ./output.log
   init_scaling
   echo "Policy: phase" >> ./output.log
-  $SCRIPT_DIR/freq_overhead phase $n_runs $n_iters 10000000 224280800 $first_freq $second_freq $first_iters $second_iters >> ./output.log
+  $SCRIPT_DIR/freq_overhead phase $n_runs $n_iters 1024 2048 $first_freq $second_freq $first_iters $second_iters >> ./output.log
   echo "Policy: kernel" >> ./output.log
-  $SCRIPT_DIR/freq_overhead kernel $n_runs $n_iters 10000000 224280800 $first_freq $second_freq $first_iters $second_iters >> ./output.log
+  $SCRIPT_DIR/freq_overhead kernel $n_runs $n_iters 1024 2048 $first_freq $second_freq $first_iters $second_iters >> ./output.log
 done
 
 reset_freq
