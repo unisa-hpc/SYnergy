@@ -17,8 +17,9 @@ public:
   friend class concurrent_kernel_profiler<profiling_manager>;
   friend class sequential_kernel_profiler<profiling_manager>;
   friend class device_profiler<profiling_manager>;
+#ifdef SYNERGY_HOST_PROFILING
   friend class host_device_profiler<profiling_manager>;
-
+#endif
   profiling_manager(device& device) : device{device} {
 #ifdef SYNERGY_DEVICE_PROFILING
 #ifdef SYNERGY_HOST_PROFILING

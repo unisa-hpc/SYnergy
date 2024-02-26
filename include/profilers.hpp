@@ -1,8 +1,9 @@
 #pragma once
 
 #include "profiling_manager.hpp"
+#ifdef SYNERGY_HOST_PROFILING
 #include "host_profiler.hpp"
-
+#endif
 namespace synergy {
 
 namespace detail {
@@ -110,13 +111,13 @@ private:
   Manager& manager;
 };
 
-
+#ifdef SYNERGY_HOST_PROFILING
 template <typename Manager>
 class host_device_profiler {
 public:
   host_device_profiler(Manager& manager)
       : manager{manager} {}
-  
+
   void operator()() {
     synergy::device& device = manager.device;
     auto eh_start = host_profiler::get_host_energy();
@@ -138,19 +139,22 @@ public:
       energy_sample = device.get_power_usage() / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
       manager.device_energy_consumption += energy_sample;
       auto eh_end = host_profiler::get_host_energy();
+
       manager.host_energy_consumption = (eh_end - eh_start) / 1000000.0; // microjoules to joules
 
       std::this_thread::sleep_for(std::chrono::milliseconds(sampling_rate));
     }
 #endif
   }
+
 private:
   /**
    * @brief Get the host energy value in microjoules
-  */
+   */
 
   Manager& manager;
 };
+#endif
 
 } // namespace detail
 
