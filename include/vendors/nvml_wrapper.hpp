@@ -93,7 +93,7 @@ public:
 
   inline frequency get_core_frequency(nvml::device_handle handle) const {
     unsigned int frequency;
-    check(nvmlDeviceGetApplicationsClock(handle, NVML_CLOCK_GRAPHICS, &frequency));
+    check(nvmlDeviceGetClock (handle, NVML_CLOCK_SM , NVML_CLOCK_ID_CURRENT,  &frequency));
     return frequency;
   }
 
