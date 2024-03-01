@@ -31,6 +31,12 @@ sns.set_theme()
 data1 = pd.read_csv(file_path1)
 data2 = pd.read_csv(file_path2)
 
+max_energy = max(data1['app_device_energy_Average'].max(), data1['phase_device_energy_Average'].max(), data1['kernel_device_energy_Average'])
+max_energy = max(max_energy, data1['app_host_energy_Average'].max(), data1['phase_host_energy_Average'].max(), data1['kernel_host_energy_Average'])
+max_energy = max(max_energy, data2['app_device_energy_Average'].max(), data2['phase_device_energy_Average'].max(), data2['kernel_device_energy_Average'])
+max_energy = max(max_energy, data2['app_host_energy_Average'].max(), data2['phase_host_energy_Average'].max(), data2['kernel_host_energy_Average'])
+max_energy += max_energy % 50
+
 x = np.arange(len(data1['n_kernels']))
 x_labels = [f'{x + x}' for x in data1['n_kernels']]
 
@@ -76,6 +82,7 @@ legend = [
 
 plt.legend(handles=legend, ncol=2, prop = legend_props)
 
+plt.ylim(top=max_energy)
 plt.xticks(x, x_labels)
 for tick in plt.gca().xaxis.get_major_ticks():
   tick.set_pad(padding)

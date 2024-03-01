@@ -11,8 +11,8 @@ legend_props = {'size': 10}
 text_y_pos = 0
 rotation=20
 bar_width_offset = 0.01
-bar_width = 0.15
-padding=15
+bar_width = 0.13
+padding=20
 COLOR1 = 'C0'
 COLOR2 = 'C1'
 
