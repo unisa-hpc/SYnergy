@@ -1,8 +1,9 @@
 #pragma once
 
 #include "profiling_manager.hpp"
+#ifdef SYNERGY_HOST_PROFILING
 #include "host_profiler.hpp"
-
+#endif
 namespace synergy {
 
 namespace detail {
@@ -44,20 +45,21 @@ private:
 template <typename Manager>
 class sequential_kernel_profiler {
 public:
-  sequential_kernel_profiler(Manager& manager, kernel& kernel)
-      : manager{manager}, kernel{kernel} {}
+  sequential_kernel_profiler(Manager& manager, kernel& kernel, energy start_energy = 0)
+      : manager{manager}, kernel{kernel}, start_energy{start_energy} {}
 
   void operator()() {
     synergy::device& device = manager.device;
-    double energy_sample = 0.0;
+    double energy_sample = start_energy;
 
 #if defined(SYNERGY_USE_PROFILING_ENERGY) && (defined(SYNERGY_LZ_SUPPORT) || defined(SYNERGY_GEOPM_SUPPORT) || defined(SYNERGY_CUDA_SUPPORT))
-    auto start = device.get_energy_usage();
     while (kernel.event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete)
       ;
 
-    auto end = device.get_energy_usage();
-    energy_sample = (end - start) / 1000000.0; // microjoules to joules
+    energy end = 0; 
+    while( (end = device.get_energy_usage()) == start_energy)
+      ;
+    energy_sample = (end - energy_sample) / 1000000.0; // microjoules to joules
     kernel.energy = energy_sample;
 #else
     auto sampling_rate = device.get_power_sampling_rate();
@@ -75,6 +77,7 @@ public:
 private:
   Manager& manager;
   kernel& kernel;
+  energy start_energy;
 };
 
 template <typename Manager>
@@ -110,13 +113,13 @@ private:
   Manager& manager;
 };
 
-
+#ifdef SYNERGY_HOST_PROFILING
 template <typename Manager>
 class host_device_profiler {
 public:
   host_device_profiler(Manager& manager)
       : manager{manager} {}
-  
+
   void operator()() {
     synergy::device& device = manager.device;
     auto eh_start = host_profiler::get_host_energy();
@@ -138,22 +141,25 @@ public:
       energy_sample = device.get_power_usage() / 1000000.0 * sampling_rate / 1000; // Get the integral of the power usage over the interval
       manager.device_energy_consumption += energy_sample;
       auto eh_end = host_profiler::get_host_energy();
+
       manager.host_energy_consumption = (eh_end - eh_start) / 1000000.0; // microjoules to joules
 
       std::this_thread::sleep_for(std::chrono::milliseconds(sampling_rate));
     }
 #endif
   }
+
 private:
   /**
    * @brief Get the host energy value in microjoules
-  */
+   */
 
   Manager& manager;
 };
 
 class geopm_profiler {
 };
+#endif
 
 } // namespace detail
 

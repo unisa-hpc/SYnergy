@@ -17,8 +17,9 @@ public:
   friend class concurrent_kernel_profiler<profiling_manager>;
   friend class sequential_kernel_profiler<profiling_manager>;
   friend class device_profiler<profiling_manager>;
+#ifdef SYNERGY_HOST_PROFILING
   friend class host_device_profiler<profiling_manager>;
-
+#endif
   profiling_manager(device& device) : device{device} {
 #ifndef SYNERGY_GEOPM_SUPPORT
 #ifdef SYNERGY_DEVICE_PROFILING
@@ -48,9 +49,10 @@ public:
   }
 
 #ifdef SYNERGY_KERNEL_PROFILING
-  void profile_kernel(sycl::event event) {
+  void profile_kernel(sycl::event event, energy start_energy) {
     kernels.push_back(kernel{event});
-    auto future = std::async(std::launch::async, sequential_kernel_profiler<profiling_manager>{*this, kernels.back()});
+
+    auto future = std::async(std::launch::async, sequential_kernel_profiler<profiling_manager>{*this, kernels.back(), start_energy});
     // this will automatically serialize all profiled kernels
     // since the std::future destructor will wait until the async thread ends
   }
