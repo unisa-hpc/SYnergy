@@ -386,14 +386,14 @@ struct FreqChangeCost {
 };
 
 template<typename T>
-FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqChangePolicy policy, bool is_first, size_t n_kernels, size_t n_iters, T& kernel) {
+FreqChangeCost launch_kernel(synergy::queue& q, std::vector<synergy::frequency> freqs, FreqChangePolicy policy, bool is_first, size_t n_kernels, size_t n_iters, T& kernel) {
   std::chrono::high_resolution_clock::time_point overhead_start_time, overhead_end_time;
   synergy::energy kernel_energy {0};
   double overhead_time {0}, kernel_time{0};
   for (int it = 0; it < n_kernels; it++) {
-    if ((it == 0 && ((is_first && policy == FreqChangePolicy::APP) || (policy == FreqChangePolicy::PHASE))) || policy == FreqChangePolicy::KERNEL) {
+    if (policy == FreqChangePolicy::KERNEL || (it == 0 && ((is_first && policy == FreqChangePolicy::APP) || (policy == FreqChangePolicy::PHASE)))) {
       overhead_start_time = std::chrono::high_resolution_clock::now();
-      auto cfe = q.submit(0, freq, [&](sycl::handler& cgh){
+      auto cfe = q.submit(0, freqs[it % freqs.size()], [&](sycl::handler& cgh){
         cgh.single_task([=](){
           // Do nothing
         });
@@ -414,12 +414,14 @@ FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqCha
 }
 
 int main(int argc, char** argv) {
-  synergy::frequency first_freq = 0;
-  synergy::frequency second_freq = 0;
+  synergy::frequency first_freq1 = 0;
+  synergy::frequency first_freq2 = 0;
+  synergy::frequency second_freq1 = 0;
+  synergy::frequency second_freq2 = 0;
   FreqChangePolicy policy;
   size_t n_kernels, num_runs, first_size, second_size, first_iters {1}, second_iters {1};
-  if (argc < 8) {
-    std::cerr << "Usage: " << argv[0] << " <policy> <num-runs> <num-kernels> <first_size> <second_size> <first_freq> <second_freq> [first_iters] [second_iters]" << std::endl;
+  if (argc < 10) {
+    std::cerr << "Usage: " << argv[0] << " <policy> <num-runs> <num-kernels> <first_size> <second_size> <first_freq1> <first_freq2> <second_freq2> <second_freq1> [first_iters] [second_iters]" << std::endl;
     exit(1);
   }
 
@@ -431,10 +433,12 @@ int main(int argc, char** argv) {
   n_kernels = std::stoi(argv[3]);
   first_size = std::stoi(argv[4]);
   second_size = std::stoi(argv[5]);
-  first_freq = std::stoi(argv[6]);
-  second_freq = std::stoi(argv[7]);
-  if (argc > 8) first_iters = std::stoi(argv[8]);
-  if (argc > 9) second_iters = std::stoi(argv[9]);
+  first_freq1 = std::stoi(argv[6]);
+  first_freq2 = std::stoi(argv[7]);
+  second_freq1 = std::stoi(argv[8]);
+  second_freq2 = std::stoi(argv[9]);
+  if (argc > 10) first_iters = std::stoi(argv[10]);
+  if (argc > 11) second_iters = std::stoi(argv[11]);
 
   std::vector<double> total_times;
   std::vector<double> kernel_times;
@@ -447,8 +451,8 @@ int main(int argc, char** argv) {
     synergy::queue q {sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}}};
     MatMul matmul_kernel{q, first_size};
     Median median_kernel{q, second_size};
-    launch_kernel(q, first_freq, policy, true, n_kernels, first_iters, matmul_kernel);
-    launch_kernel(q, second_freq, policy, false, n_kernels, second_iters, median_kernel);
+    launch_kernel(q, std::vector<synergy::frequency>{first_freq1, first_freq2}, policy, true, n_kernels, first_iters, matmul_kernel);
+    launch_kernel(q, std::vector<synergy::frequency>{second_freq1, second_freq2}, policy, false, n_kernels, second_iters, median_kernel);
     q.wait_and_throw(); // wait for all kernels to finish
   }
 
@@ -459,8 +463,8 @@ int main(int argc, char** argv) {
     auto start_time = std::chrono::high_resolution_clock::now();
 
     // launch kernels
-    auto ret_mat = launch_kernel(q, first_freq, policy, true, n_kernels, first_iters, matmul_kernel);
-    auto ret_sob = launch_kernel(q, second_freq, policy, false, n_kernels, second_iters, median_kernel);
+    auto ret_mat = launch_kernel(q, std::vector<synergy::frequency>{first_freq1, first_freq2}, policy, true, n_kernels, first_iters, matmul_kernel);
+    auto ret_sob = launch_kernel(q, std::vector<synergy::frequency>{second_freq1, second_freq2}, policy, false, n_kernels, second_iters, median_kernel);
     q.wait_and_throw(); // wait for all kernels to finish
 
     auto end_time = std::chrono::high_resolution_clock::now();
