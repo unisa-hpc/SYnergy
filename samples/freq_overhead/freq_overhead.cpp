@@ -406,7 +406,9 @@ FreqChangeCost launch_kernel(synergy::queue& q, synergy::frequency freq, FreqCha
     auto e = kernel(n_iters); // Kernel Launch
     e.wait();
     kernel_time += (e.template get_profiling_info<sycl::info::event_profiling::command_end>() - e.template get_profiling_info<sycl::info::event_profiling::command_start>()) / 1000000; // to milliseconds
+#ifdef SYNERGY_KERNEL_PROFILING
     kernel_energy += q.kernel_energy_consumption(e);
+#endif
   }
   return {kernel_time, overhead_time, kernel_energy};
 }
@@ -468,8 +470,10 @@ int main(int argc, char** argv) {
     kernel_times.push_back(ret_mat.kernel_time + ret_sob.kernel_time);
     kernel_energy.push_back(ret_mat.kernel_energy + ret_sob.kernel_energy);
 
+#ifdef SYNERGY_DEVICE_PROFILING
     auto device_consumption = q.device_energy_consumption();
     device_consumptions.push_back(device_consumption);
+#endif
 
 #ifdef SYNERGY_HOST_PROFILING
     auto host_consumption = q.host_energy_consumption();
