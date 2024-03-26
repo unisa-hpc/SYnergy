@@ -64,7 +64,8 @@ public:
     using namespace std;
 
     unsigned int current_uncore_frequency = get_uncore_frequency(handle);
-    array<unsigned int, nvml::max_frequencies> core_frequencies;
+    std::vector<unsigned int> core_frequencies;
+    core_frequencies.resize(nvml::max_frequencies);
     unsigned int count_core_frequencies;
 
     check(nvmlDeviceGetSupportedGraphicsClocks(handle, current_uncore_frequency, &count_core_frequencies, core_frequencies.data()));
