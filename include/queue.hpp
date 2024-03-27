@@ -179,12 +179,12 @@ private:
         (std::is_same_v<sycl::property_list&, Args> || ...) ||
         (std::is_same_v<sycl::property_list, Args> || ...)
     )
-      return sycl::queue(std::forward<Args>(args)...);
+      return sycl::queue(std::forward<Args>(args)..., sycl::property_list{sycl::property::queue::enable_profiling{}});
     else {
       return sycl::queue(std::forward<Args>(args)..., sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order {}});
     }
 #else
-    return sycl::queue(std::forward<Args>(args)...);
+    return sycl::queue(std::forward<Args>(args)..., sycl::property_list{sycl::property::queue::enable_profiling{}});
 #endif
   }
 
