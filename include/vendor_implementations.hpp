@@ -16,4 +16,8 @@
 #include "vendors/lz_wrapper.hpp"
 #endif
 
+#ifdef SYNERGY_EAR_SUPPORT
+#include "vendors/ear_wrapper.hpp"
+#endif
+
 #endif
