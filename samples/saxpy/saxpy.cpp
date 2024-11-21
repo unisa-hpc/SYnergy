@@ -1,4 +1,5 @@
 #include <synergy.hpp>
+#include <chrono>
 
 using namespace sycl;
 
@@ -16,6 +17,7 @@ int main() {
   buffer<float, 1> y_buf{y.data(), SIZE};
   buffer<float, 1> z_buf{z.data(), SIZE};
 
+  auto start_total = std::chrono::high_resolution_clock::now();
   event e = q.submit([&](handler& h) {
     accessor<float, 1, access_mode::read> x_acc{x_buf, h};
     accessor<float, 1, access_mode::read> y_acc{y_buf, h};
@@ -28,13 +30,16 @@ int main() {
   });
 
   q.wait();
-  const auto start = e.get_profiling_info<sycl::info::event_profiling::command_start>();
-  const auto end = e.get_profiling_info<sycl::info::event_profiling::command_end>();
-
-  std::cout << "Time: " << (end - start) / 1e3 << " us" << std::endl;
+  auto end_total = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double, std::micro> total_time = end_total - start_total;
+  std::cout << "Total Time: " << total_time.count() << " us" << std::endl;
 
 #ifdef SYNERGY_KERNEL_PROFILING
   std::cout << "Kernel energy consumption: " << q.kernel_energy_consumption(e) << " j\n";
+  const auto start = e.get_profiling_info<sycl::info::event_profiling::command_start>();
+  const auto end = e.get_profiling_info<sycl::info::event_profiling::command_end>();
+  std::cout << "Kernel Time: " << (end - start) / 1e3 << " us" << std::endl;
+
 #endif
 #ifdef SYNERGY_DEVICE_PROFILING
   std::cout << "Device energy consumption: " << q.device_energy_consumption() << " j\n";
