@@ -6,8 +6,7 @@
 #include <iostream>
 #include <cmath>
 
-#include <ear/PlatformIO.hpp>
-#include <ear/PlatformTopo.hpp>
+// include EAR library
 
 #include "../management_wrapper.hpp"
 
