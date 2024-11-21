@@ -65,6 +65,7 @@ public:
   sycl::event submit(T cfg) {
     sycl::event event;
 
+    energy start_energy = get_starting_energy();
     if (has_target()) {
       event = sycl::queue::submit(
           [&](sycl::handler& h) {
@@ -79,7 +80,7 @@ public:
       );
 
 #ifdef SYNERGY_KERNEL_PROFILING
-      profiling->profile_kernel(event);
+      profiling->profile_kernel(event, start_energy);
 #endif
       event.wait_and_throw(); // we always have to do this because kernel submit time can be different from kernel execution time
     } else {
@@ -89,7 +90,7 @@ public:
 #ifdef __HIPSYCL__
       get_context().hipSYCL_runtime()->dag().flush_sync();
 #endif
-      profiling->profile_kernel(event);
+      profiling->profile_kernel(event, start_energy);
       event.wait_and_throw();
 #endif
     }
@@ -99,6 +100,7 @@ public:
 
   template <typename T>
   sycl::event submit(frequency kernel_uncore_frequency, frequency kernel_core_frequency, T cfg) {
+    energy start_energy = get_starting_energy();
     sycl::event event = sycl::queue::submit(
         [&](sycl::handler& h) {
           try {
@@ -115,7 +117,7 @@ public:
 #ifdef __HIPSYCL__
     get_context().hipSYCL_runtime()->dag().flush_sync();
 #endif
-    profiling->profile_kernel(event);
+    profiling->profile_kernel(event, start_energy);
 #endif
 
     event.wait_and_throw(); // if we do frequency scaling we always wait
@@ -170,19 +172,19 @@ private:
 #ifdef SYNERGY_KERNEL_PROFILING
     // check if it has some standard property
     if constexpr (
-        (std::is_same_v<sycl::property::queue::enable_profiling&, Args> || ...) ||
-        (std::is_same_v<sycl::property::queue::enable_profiling, Args> || ...) ||
-        (std::is_same_v<sycl::property::queue::in_order&, Args> || ...) ||
-        (std::is_same_v<sycl::property::queue::in_order, Args> || ...) ||
-        (std::is_same_v<sycl::property_list&, Args> || ...) ||
-        (std::is_same_v<sycl::property_list, Args> || ...)
-    )
-      return sycl::queue(std::forward<Args>(args)...);
+        (std::is_same_v<sycl::property::queue::enable_profiling, std::remove_reference_t<Args>> || ...) ||
+        (std::is_same_v<sycl::property::queue::in_order, std::remove_reference_t<Args>> || ...) ||
+        (std::is_same_v<sycl::property_list, std::remove_reference_t<Args>> || ...)
+    ){
+      sycl::queue fake_queue = sycl::queue(std::forward<Args>(args)...);
+      return sycl::queue(fake_queue.get_device(), sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order {}});
+    }
+    
     else {
       return sycl::queue(std::forward<Args>(args)..., sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order {}});
     }
 #else
-    return sycl::queue(std::forward<Args>(args)...);
+    return sycl::queue(std::forward<Args>(args)..., sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}});
 #endif
   }
 
@@ -192,6 +194,19 @@ private:
       throw std::runtime_error("synergy::queue error: queue must be constructed with the enable_profiling property");
     if (!has_property<sycl::property::queue::in_order>())
       throw std::runtime_error("synergy::queue error: queue must be constructed with the in_order property");
+#endif
+  }
+
+  inline energy get_starting_energy() {
+#if defined(SYNERGY_KERNEL_PROFILING) && defined(SYNERGY_USE_PROFILING_ENERGY)
+    energy start_energy = device.get_energy_usage();
+    energy tmp_energy;
+    while ((tmp_energy = device.get_energy_usage()) == start_energy)
+      ;
+    start_energy = tmp_energy;
+    return start_energy; 
+#else
+    return 0;
 #endif
   }
 };

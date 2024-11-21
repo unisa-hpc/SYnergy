@@ -55,7 +55,9 @@ public:
   }
 
   inline energy get_energy_usage(nvml::device_handle handle) const {
-    throw std::runtime_error{"synergy " + std::string(nvml::name) + " wrapper error: get_energy_usage is not supported"};
+    unsigned long long energy;
+    check(nvmlDeviceGetTotalEnergyConsumption(handle, &energy)); // millijoules
+    return energy * 1000;                                        // return microjoules
   }
 
   inline std::vector<frequency> get_supported_core_frequencies(nvml::device_handle handle) const {
@@ -91,7 +93,7 @@ public:
 
   inline frequency get_core_frequency(nvml::device_handle handle) const {
     unsigned int frequency;
-    check(nvmlDeviceGetApplicationsClock(handle, NVML_CLOCK_GRAPHICS, &frequency));
+    check(nvmlDeviceGetClock (handle, NVML_CLOCK_SM , NVML_CLOCK_ID_CURRENT,  &frequency));
     return frequency;
   }
 
@@ -102,15 +104,13 @@ public:
   }
 
   inline void set_core_frequency(nvml::device_handle handle, frequency target) const {
-    unsigned int uncore_frequency = get_uncore_frequency(handle);
-    check(nvmlDeviceSetApplicationsClocks(handle, uncore_frequency, target));
+    check(nvmlDeviceSetGpuLockedClocks(handle, target, target));
   }
 
   inline void set_uncore_frequency(nvml::device_handle handle, frequency target) const {
     std::array<unsigned int, nvml::max_frequencies> core_frequencies;
     unsigned int count_core_frequencies;
     check(nvmlDeviceGetSupportedGraphicsClocks(handle, target, &count_core_frequencies, core_frequencies.data()));
-
     check(nvmlDeviceSetApplicationsClocks(handle, target, core_frequencies[0])); // put highest core frequency
   }
 
