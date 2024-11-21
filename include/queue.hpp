@@ -169,23 +169,28 @@ private:
 
   template <typename... Args>
   static sycl::queue check_args(Args&&... args) {
-#ifdef SYNERGY_KERNEL_PROFILING
-    // check if it has some standard property
     if constexpr (
-        (std::is_same_v<sycl::property::queue::enable_profiling, std::remove_reference_t<Args>> || ...) ||
         (std::is_same_v<sycl::property::queue::in_order, std::remove_reference_t<Args>> || ...) ||
+#ifdef SYNERGY_KERNEL_PROFILING
+        (std::is_same_v<sycl::property::queue::enable_profiling, std::remove_reference_t<Args>> || ...) ||
+#endif
         (std::is_same_v<sycl::property_list, std::remove_reference_t<Args>> || ...)
     ){
       sycl::queue fake_queue = sycl::queue(std::forward<Args>(args)...);
-      return sycl::queue(fake_queue.get_device(), sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order {}});
+      return sycl::queue(fake_queue.get_device(), sycl::property_list{
+#ifdef SYNERGY_KERNEL_PROFILING
+                         sycl::property::queue::enable_profiling{}, 
+#endif
+                         sycl::property::queue::in_order {}});
     }
     
     else {
-      return sycl::queue(std::forward<Args>(args)..., sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order {}});
-    }
-#else
-    return sycl::queue(std::forward<Args>(args)..., sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}});
+      return sycl::queue(std::forward<Args>(args)..., sycl::property_list{
+#ifdef SYNERGY_KERNEL_PROFILING
+                         sycl::property::queue::enable_profiling{}, 
 #endif
+                         sycl::property::queue::in_order {}});
+    }
   }
 
   inline void assert_profiling_properties() {
