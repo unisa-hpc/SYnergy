@@ -83,6 +83,7 @@ double get_powercap_energy() {
     file >> e;
     energy += static_cast<double>(e);
   }
+  return energy;
 }
 
 } // namespace detail
