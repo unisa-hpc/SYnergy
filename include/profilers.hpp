@@ -52,7 +52,7 @@ public:
     synergy::device& device = manager.device;
     double energy_sample = start_energy;
 
-#if defined(SYNERGY_USE_PROFILING_ENERGY) && (defined(SYNERGY_LZ_SUPPORT) || defined(SYNERGY_CUDA_SUPPORT))
+#if defined(SYNERGY_USE_PROFILING_ENERGY) && (defined(SYNERGY_LZ_SUPPORT) || defined(SYNERGY_GEOPM_SUPPORT) || defined(SYNERGY_CUDA_SUPPORT))
     while (kernel.event.get_info<sycl::info::event::command_execution_status>() != sycl::info::event_command_status::complete)
       ;
 
@@ -89,7 +89,7 @@ public:
   void operator()() {
     synergy::device& device = manager.device;
 
-#if defined(SYNERGY_USE_PROFILING_ENERGY) && (defined(SYNERGY_LZ_SUPPORT) || defined(SYNERGY_CUDA_SUPPORT))
+#if defined(SYNERGY_USE_PROFILING_ENERGY) && (defined(SYNERGY_LZ_SUPPORT) || defined(SYNERGY_GEOPM_SUPPORT) || defined(SYNERGY_CUDA_SUPPORT))
     auto e_start = device.get_energy_usage();
 
     while (!manager.finished.load(std::memory_order_acquire)) {
@@ -124,7 +124,7 @@ public:
     synergy::device& device = manager.device;
     auto eh_start = host_profiler::get_host_energy();
 
-#if defined(SYNERGY_USE_PROFILING_ENERGY) && (defined(SYNERGY_LZ_SUPPORT) || defined(SYNERGY_CUDA_SUPPORT))
+#if defined(SYNERGY_USE_PROFILING_ENERGY) && (defined(SYNERGY_LZ_SUPPORT) || defined(SYNERGY_GEOPM_SUPPORT) || defined(SYNERGY_CUDA_SUPPORT))
     auto ed_start = device.get_energy_usage();
 
     while (!manager.finished.load(std::memory_order_acquire)) {
@@ -155,6 +155,9 @@ private:
    */
 
   Manager& manager;
+};
+
+class geopm_profiler {
 };
 #endif
 

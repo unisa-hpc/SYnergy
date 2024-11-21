@@ -21,6 +21,7 @@ public:
   friend class host_device_profiler<profiling_manager>;
 #endif
   profiling_manager(device& device) : device{device} {
+#ifndef SYNERGY_GEOPM_SUPPORT
 #ifdef SYNERGY_DEVICE_PROFILING
 #ifdef SYNERGY_HOST_PROFILING
     device_profiler = std::thread{detail::host_device_profiler<profiling_manager>{*this}};
@@ -28,12 +29,22 @@ public:
     device_profiler = std::thread{detail::device_profiler<profiling_manager>{*this}};
 #endif
 #endif
+#else
+#ifdef SYNERGY_DEVICE_PROFILING
+    device_energy_consumption = device.get_energy_usage() * 1e-6;
+#endif
+#ifdef SYNERGY_HOST_PROFILING
+    host_energy_consumption = host_profiler::get_host_energy() * 1e-6;
+#endif
+#endif
   }
 
   ~profiling_manager() {
     finished.store(true, std::memory_order_release);
 #ifdef SYNERGY_DEVICE_PROFILING
+#ifndef SYNERGY_GEOPM_SUPPORT
     device_profiler.join();
+#endif
 #endif
   }
 
@@ -58,12 +69,20 @@ public:
 #endif
 
 #ifdef SYNERGY_DEVICE_PROFILING
-  double device_energy() const {
+  double device_energy() {
+#ifndef SYNERGY_GEOPM_SUPPORT
     return device_energy_consumption;
+#else
+    return (device.get_energy_usage() * 1e-6) - device_energy_consumption;
+#endif
   }
 #ifdef SYNERGY_HOST_PROFILING
   double host_energy() const {
+#ifndef SYNERGY_GEOPM_SUPPORT
     return host_energy_consumption;
+#else
+    return (host_profiler::get_host_energy() * 1e-6) - host_energy_consumption;
+#endif
   }
 #endif
 #endif

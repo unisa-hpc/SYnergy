@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef SYNERGY_GEOPM_SUPPORT
+#include "vendors/geopm_wrapper.hpp"
+#else
+
 #ifdef SYNERGY_CUDA_SUPPORT
 #include "vendors/nvml_wrapper.hpp"
 #endif
@@ -10,4 +14,6 @@
 
 #ifdef SYNERGY_LZ_SUPPORT
 #include "vendors/lz_wrapper.hpp"
+#endif
+
 #endif
