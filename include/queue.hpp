@@ -166,30 +166,29 @@ private:
 #endif
 
   inline bool has_target() { return core_target_frequency != 0 || uncore_target_frequency != 0; }
+  template <typename T>
+  static constexpr bool is_property_list = std::is_same<std::decay_t<T>, sycl::property_list>::value;
 
+  template <typename... Ts>
+  static constexpr bool has_property_list = (is_property_list<Ts> || ...);
+  
   template <typename... Args>
   static sycl::queue check_args(Args&&... args) {
-    if constexpr (
-        (std::is_same_v<sycl::property::queue::in_order, std::remove_reference_t<Args>> || ...) ||
-#ifdef SYNERGY_KERNEL_PROFILING
-        (std::is_same_v<sycl::property::queue::enable_profiling, std::remove_reference_t<Args>> || ...) ||
-#endif
-        (std::is_same_v<sycl::property_list, std::remove_reference_t<Args>> || ...)
-    ){
-      sycl::queue fake_queue = sycl::queue(std::forward<Args>(args)...);
-      return sycl::queue(fake_queue.get_device(), sycl::property_list{
-#ifdef SYNERGY_KERNEL_PROFILING
-                         sycl::property::queue::enable_profiling{}, 
-#endif
-                         sycl::property::queue::in_order {}});
-    }
-    
+    // Helper metafunction to detect if a sycl::property_list is among Args
+    if constexpr (has_property_list<Args...>) {
+      // If a property_list is present, forward the arguments directly
+      return sycl::queue(std::forward<Args>(args)...);
+    } 
     else {
-      return sycl::queue(std::forward<Args>(args)..., sycl::property_list{
+      sycl::queue fake_queue = sycl::queue(std::forward<Args>(args)...);
+
+      // Otherwise, construct a default property_list with desired properties
 #ifdef SYNERGY_KERNEL_PROFILING
-                         sycl::property::queue::enable_profiling{}, 
+      sycl::property_list props{sycl::property::queue::in_order{}, sycl::property::queue::enable_profiling{}};
+#else
+      sycl::property_list props{sycl::property::queue::in_order{}};
 #endif
-                         sycl::property::queue::in_order {}});
+      return sycl::queue(fake_queue.get_device(), props);
     }
   }
 
