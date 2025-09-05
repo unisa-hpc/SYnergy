@@ -84,8 +84,17 @@ public:
   }
 
   inline void set_core_frequency(geopm::device_handle handle, frequency target) const {
-    g::platform_io().write_control("GPU_CORE_FREQUENCY_MIN_CONTROL", GEOPM_DOMAIN_GPU, handle, target * 1e6);
-    g::platform_io().write_control("GPU_CORE_FREQUENCY_MAX_CONTROL", GEOPM_DOMAIN_GPU, handle, target * 1e6);
+    // MIN_CORE_FREQ should always be less equal then MAX_CORE_FREQ. This check is to avoid wrong min max core frequency settings.
+    frequency curr_freq = g::platform_io().read_signal("GPU_CORE_FREQUENCY_STATUS", GEOPM_DOMAIN_GPU, handle) * 1e-6;
+    if (target >= curr_freq){
+      g::platform_io().write_control("GPU_CORE_FREQUENCY_MAX_CONTROL", GEOPM_DOMAIN_GPU, handle, target * 1e6);
+      g::platform_io().write_control("GPU_CORE_FREQUENCY_MIN_CONTROL", GEOPM_DOMAIN_GPU, handle, target * 1e6);
+    }
+    else{
+      g::platform_io().write_control("GPU_CORE_FREQUENCY_MIN_CONTROL", GEOPM_DOMAIN_GPU, handle, target * 1e6);
+      g::platform_io().write_control("GPU_CORE_FREQUENCY_MAX_CONTROL", GEOPM_DOMAIN_GPU, handle, target * 1e6);
+    }
+    return ;
   }
 
   inline void set_uncore_frequency(geopm::device_handle handle, frequency target) const {
