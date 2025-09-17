@@ -64,14 +64,12 @@ public:
     using namespace std;
 
     unsigned int current_uncore_frequency = get_uncore_frequency(handle);
-    std::vector<unsigned int> core_frequencies;
-    core_frequencies.resize(nvml::max_frequencies);
-    unsigned int count_core_frequencies;
+    std::vector<unsigned int> core_frequencies(nvml::max_frequencies+1);
+    unsigned int *count_core_frequencies = (unsigned int *) malloc(sizeof(unsigned int));
+    check(nvmlDeviceGetSupportedGraphicsClocks(handle, current_uncore_frequency, count_core_frequencies, core_frequencies.data())); // The count_core_frequencies will be updated to the actual number of supported frequencies
 
-    check(nvmlDeviceGetSupportedGraphicsClocks(handle, current_uncore_frequency, &count_core_frequencies, core_frequencies.data()));
-
-    vector<frequency> frequencies(count_core_frequencies);
-    for (int i = count_core_frequencies - 1, j = 0; i >= 0; i--, j++) // enforce non-decrescent order
+    vector<frequency> frequencies(*count_core_frequencies);
+    for (int i = *count_core_frequencies - 1, j = 0; i >= 0; i--, j++) // enforce non-decrescent order
       frequencies[j] = core_frequencies[i];
 
     return frequencies;
@@ -81,12 +79,12 @@ public:
     using namespace std;
 
     array<unsigned int, nvml::max_frequencies> memory_frequencies;
-    unsigned int count_uncore_frequencies;
+    unsigned int *count_uncore_frequencies = (unsigned int*) malloc(sizeof(unsigned int));
 
-    check(nvmlDeviceGetSupportedMemoryClocks(handle, &count_uncore_frequencies, memory_frequencies.data()));
+    check(nvmlDeviceGetSupportedMemoryClocks(handle, count_uncore_frequencies, memory_frequencies.data()));
 
-    vector<frequency> frequencies(count_uncore_frequencies);
-    for (int i = count_uncore_frequencies - 1, j = 0; i >= 0; i--, j++) // enforce non-decrescent order
+    vector<frequency> frequencies(*count_uncore_frequencies);
+    for (int i = *count_uncore_frequencies - 1, j = 0; i >= 0; i--, j++) // enforce non-decrescent order
       frequencies[j] = memory_frequencies[i];
 
     return frequencies;
