@@ -1,4 +1,4 @@
-# Test for estimate the frequency change ovrhead
+# Test for estimating the frequency change ovrhead
 ## freq_overhead.cpp
 This file run two kernels with different approaches APP, KERNEL or PHASE. This script reproduce the plot in the IPDPS paper Figure XXX
 ### How to run
