@@ -13,7 +13,7 @@ add_executable(concurrent_matmul concurrent_matmul/concurrent_matmul.cpp)
 add_executable(freq_scale freq_scale/freq_scale.cpp)
 add_executable(freq_change freq_change/freq_change.cpp)
 add_executable(freq_overhead freq_overhead/freq_overhead.cpp)
-# add_executable(freq_overhead_test freq_overhead/freq_overhead_test.cpp)
+add_executable(freq_overhead_test freq_overhead/freq_overhead_test.cpp)
 add_executable(query_freq query_freq/query_freq.cpp)
 
 
