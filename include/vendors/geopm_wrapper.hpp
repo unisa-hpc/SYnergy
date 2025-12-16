@@ -35,7 +35,7 @@ class management_wrapper<management::geopm> {
 
 public:
   inline unsigned int get_devices_count() const {
-    return g::platform_topo().num_domain(GEOPM_DOMAIN_GPU);
+    return g::platform_topo().num_domain(GEOPM_DOMAIN_GPU_CHIP);
   }
 
   inline void initialize() const { }
@@ -49,19 +49,19 @@ public:
   }
 
   inline power get_power_usage(geopm::device_handle handle) const {
-    unsigned int power = g::platform_io().read_signal("GPU_POWER", GEOPM_DOMAIN_GPU, handle);
+    unsigned int power = g::platform_io().read_signal("GPU_CORE_POWER", GEOPM_DOMAIN_GPU_CHIP, handle);
     return power * 1e6; // from W to uW
   }
 
   inline energy get_energy_usage(geopm::device_handle handle) const {
-    unsigned int energy = g::platform_io().read_signal("GPU_ENERGY", GEOPM_DOMAIN_GPU, handle);
+    unsigned int energy = g::platform_io().read_signal("GPU_CORE_ENERGY", GEOPM_DOMAIN_GPU_CHIP, handle);
     return energy * 1e6; // from J to uJ
   }
 
   inline std::vector<frequency> get_supported_core_frequencies(geopm::device_handle handle) const {
-    auto min = g::platform_io().read_signal("GPU_CORE_FREQUENCY_MIN_AVAIL", GEOPM_DOMAIN_GPU, handle);
-    auto max = g::platform_io().read_signal("GPU_CORE_FREQUENCY_MAX_AVAIL", GEOPM_DOMAIN_GPU, handle);
-    auto step = g::platform_io().read_signal("GPU_CORE_FREQUENCY_STEP", GEOPM_DOMAIN_GPU, handle);
+    auto min = g::platform_io().read_signal("GPU_CORE_FREQUENCY_MIN_AVAIL", GEOPM_DOMAIN_GPU_CHIP, handle);
+    auto max = g::platform_io().read_signal("GPU_CORE_FREQUENCY_MAX_AVAIL", GEOPM_DOMAIN_GPU_CHIP, handle);
+    auto step = g::platform_io().read_signal("GPU_CORE_FREQUENCY_STEP", GEOPM_DOMAIN_GPU_CHIP, handle);
 
     std::vector<frequency> frequencies;
     for (auto i = min; i <= max; i += step) {
@@ -76,7 +76,7 @@ public:
   }
 
   inline frequency get_core_frequency(geopm::device_handle handle) const {
-    return g::platform_io().read_signal("GPU_CORE_FREQUENCY_STATUS", GEOPM_DOMAIN_GPU, handle) * 1e-6;
+    return g::platform_io().read_signal("GPU_CORE_FREQUENCY_STATUS", GEOPM_DOMAIN_GPU_CHIP, handle) * 1e-6;
   }
 
   inline frequency get_uncore_frequency(geopm::device_handle handle) const {
@@ -85,14 +85,14 @@ public:
 
   inline void set_core_frequency(geopm::device_handle handle, frequency target) const {
     // MIN_CORE_FREQ should always be less equal then MAX_CORE_FREQ. This check is to avoid wrong min max core frequency settings.
-    frequency curr_freq = g::platform_io().read_signal("GPU_CORE_FREQUENCY_STATUS", GEOPM_DOMAIN_GPU, handle) * 1e-6;
+    frequency curr_freq = g::platform_io().read_signal("GPU_CORE_FREQUENCY_STATUS", GEOPM_DOMAIN_GPU_CHIP, handle) * 1e-6;
     if (target >= curr_freq){
-      g::platform_io().write_control("GPU_CORE_FREQUENCY_MAX_CONTROL", GEOPM_DOMAIN_GPU, handle, target * 1e6);
-      g::platform_io().write_control("GPU_CORE_FREQUENCY_MIN_CONTROL", GEOPM_DOMAIN_GPU, handle, target * 1e6);
+      g::platform_io().write_control("GPU_CORE_FREQUENCY_MAX_CONTROL", GEOPM_DOMAIN_GPU_CHIP, handle, target * 1e6);
+      g::platform_io().write_control("GPU_CORE_FREQUENCY_MIN_CONTROL", GEOPM_DOMAIN_GPU_CHIP, handle, target * 1e6);
     }
     else{
-      g::platform_io().write_control("GPU_CORE_FREQUENCY_MIN_CONTROL", GEOPM_DOMAIN_GPU, handle, target * 1e6);
-      g::platform_io().write_control("GPU_CORE_FREQUENCY_MAX_CONTROL", GEOPM_DOMAIN_GPU, handle, target * 1e6);
+      g::platform_io().write_control("GPU_CORE_FREQUENCY_MIN_CONTROL", GEOPM_DOMAIN_GPU_CHIP, handle, target * 1e6);
+      g::platform_io().write_control("GPU_CORE_FREQUENCY_MAX_CONTROL", GEOPM_DOMAIN_GPU_CHIP, handle, target * 1e6);
     }
     return ;
   }
