@@ -6,14 +6,12 @@ if(SYNERGY_SYCL_IMPL STREQUAL "OpenSYCL" AND SYNERGY_LZ_SUPPORT)
   message(STATUS "The supported OpenSYCL target for Level Zero is \"sscp\"")
 endif()
 
-# add_executable(matrix_mul matrix_mul/matrix_mul.cpp)
-# add_executable(query_freq query_freq/query_freq.cpp)
+add_executable(mat_mul aurora/mat_mul.cpp)
 add_executable(saxpy saxpy/saxpy.cpp)
 add_executable(concurrent_matmul concurrent_matmul/concurrent_matmul.cpp)
 add_executable(freq_scale freq_scale/freq_scale.cpp)
 add_executable(freq_change freq_change/freq_change.cpp)
 add_executable(freq_overhead freq_overhead/freq_overhead.cpp)
-add_executable(freq_overhead_test freq_overhead/freq_overhead_test.cpp)
 add_executable(query_freq query_freq/query_freq.cpp)
 
 
