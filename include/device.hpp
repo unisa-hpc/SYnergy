@@ -9,6 +9,8 @@ namespace synergy {
 
 class device {
 public:
+
+
   device() = default;
   device(std::shared_ptr<detail::device_impl> impl) : impl{impl} {}
 
@@ -31,6 +33,7 @@ public:
   inline energy get_energy_usage() { return impl->get_energy_usage(); }
 
   inline unsigned get_power_sampling_rate() { return impl->get_power_sampling_rate(); }
+  
 
 private:
   std::shared_ptr<detail::device_impl> impl;

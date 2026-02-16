@@ -42,6 +42,7 @@ add_library(synergy INTERFACE)
 target_link_libraries(synergy INTERFACE Threads::Threads)
 
 target_include_directories(synergy INTERFACE include)
+target_include_directories(synergy INTERFACE include/profiling)
 
 option(SYNERGY_DEVICE_PROFILING "Enable device energy consumption profiling" OFF)
 option(SYNERGY_KERNEL_PROFILING "Enable kernel energy consumption profiling" OFF)

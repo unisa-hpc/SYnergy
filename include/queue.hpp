@@ -32,6 +32,7 @@ public:
         uncore_target_frequency{uncore_frequency},
         profiling{std::make_shared<detail::profiling_manager>(device)} {
     assert_profiling_properties();
+    device.set_core_frequency(core_target_frequency);
   }
 #else
   template <typename... Rest>
@@ -44,7 +45,9 @@ public:
       : sycl::queue(synergy::queue::check_args(std::forward<Rest>(args)...)),
         device{synergy::detail::runtime::synergy_device_from(get_device())},
         core_target_frequency{core_frequency},
-        uncore_target_frequency{uncore_frequency} {}
+        uncore_target_frequency{uncore_frequency} {
+          device.set_core_frequency(core_target_frequency);
+        }
 #endif
 
   // #ifdef SYNERGY_ENABLE_PROFILING
@@ -82,7 +85,7 @@ public:
 #ifdef SYNERGY_KERNEL_PROFILING
       profiling->profile_kernel(event, start_energy);
 #endif
-      event.wait_and_throw(); // we always have to do this because kernel submit time can be different from kernel execution time
+      // event.wait_and_throw(); // we always have to do this because kernel submit time can be different from kernel execution time
     } else {
       event = sycl::queue::submit(cfg);
 
