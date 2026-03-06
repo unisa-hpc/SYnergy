@@ -61,7 +61,6 @@ private:
 #endif
 
 #ifdef SYNERGY_GEOPM_SUPPORT
-      // TODO: Geopm backend consider the FLAT mode where each tile is a different GPUs
       /* 
          When executing in COMPOSITE mode there are two different error scenario:
          
@@ -86,8 +85,15 @@ private:
       for (size_t j = 0, k=0; j < devs.size(); j++) {
         synergy::log::synergy_log(synergy::log::LogLevel::Debug, "synergy: root device "+ std::to_string(j));
         // Check for subdevice
-        auto tiles = devs[j].create_sub_devices<sycl::info::partition_property::partition_by_affinity_domain>(
-                      sycl::info::partition_affinity_domain::next_partitionable);
+        std::vector<sycl::device> tiles;
+        try {
+            tiles = devs[j].create_sub_devices<
+                sycl::info::partition_property::partition_by_affinity_domain>(
+                    sycl::info::partition_affinity_domain::next_partitionable);
+        }
+        catch (const sycl::exception&) {
+            synergy::log::synergy_log(synergy::log::LogLevel::Debug, "synergy: no subdevice for root device "+ std::to_string(j));
+        }
         bool is_subdevice = !tiles.empty();
         if(!is_subdevice){
           auto ptr = std::make_shared<vendor_device<management::geopm>>(j, synergy::gpu_domain::flat);
