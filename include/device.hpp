@@ -34,6 +34,9 @@ public:
 
   inline unsigned get_power_sampling_rate() { return impl->get_power_sampling_rate(); }
   
+  inline temperature_t get_temperature() { return impl->get_temperature(); }
+
+  
 
 private:
   std::shared_ptr<detail::device_impl> impl;

@@ -27,7 +27,7 @@ public:
   virtual void set_uncore_frequency(frequency target) = 0;
 
   virtual void set_all_frequencies(frequency core, frequency uncore) = 0;
-
+  virtual temperature_t get_temperature() = 0;
   virtual power get_power_usage() = 0;
 
   virtual energy get_energy_usage() = 0;
@@ -104,6 +104,9 @@ public:
 
   inline unsigned get_power_sampling_rate() {
     return vendor::sampling_rate;
+  }
+  inline temperature_t get_temperature() {
+    return library.get_temperature(handle);
   }
 
  

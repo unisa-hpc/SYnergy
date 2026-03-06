@@ -21,10 +21,12 @@ namespace management {
   enum class synergy_signal {
     GET_POWER,
     GET_ENERGY,
+    GET_TEMPERATURE,
     GET_CORE_FREQUENCY,
     GET_UNCORE_FREQUENCY,
     SET_MIN_CORE_FREQ,
-    SET_MAX_CORE_FREQ,
+    SET_MAX_CORE_FREQ
+
   };
   // Map synergy signal to geopm signal according to the GEOPM GPU domain
   inline std::string geopm_signal_name(synergy_signal signal, geopm_domain_e domain){
@@ -34,8 +36,10 @@ namespace management {
               return (domain == GEOPM_DOMAIN_GPU) ? "LEVELZERO::GPU_POWER" : "GPU_CORE_POWER";
           case synergy_signal::GET_ENERGY:
               return (domain == GEOPM_DOMAIN_GPU) ? "LEVELZERO::GPU_ENERGY" : "DRM::HWMON::ENERGY1_INPUT::GPU_CHIP";
+          case synergy_signal::GET_TEMPERATURE:
+              return (domain == GEOPM_DOMAIN_GPU) ? "LEVELZERO::GPU_CORE_TEMPERATURE_MAXIMUM" : "LEVELZERO::GPU_CORE_TEMPERATURE_MAXIMUM";
           case synergy_signal::GET_CORE_FREQUENCY:
-              return (domain == GEOPM_DOMAIN_GPU) ? "" : "DRM::BASE_ACT_FREQ";
+              return (domain == GEOPM_DOMAIN_GPU) ? "DRM::BASE_ACT_FREQ" : "DRM::BASE_ACT_FREQ";
           case synergy_signal::SET_MAX_CORE_FREQ:
               return (domain == GEOPM_DOMAIN_GPU) ? "": "DRM::RPS_MAX_FREQ";
           case synergy_signal::SET_MIN_CORE_FREQ:
@@ -127,20 +131,56 @@ public:
   inline frequency get_core_frequency(geopm::device_handle handle) const {
     std::string debug_msg = "get_core_frequency -> Vendor id: " + std::to_string(handle.id) + " domain: " + std::to_string(static_cast<int>(handle.domain));
     synergy::log::synergy_log(synergy::log::LogLevel::Debug, debug_msg);
-    frequency freq =  g::platform_io().read_signal(
-      synergy::detail::management::geopm_signal_name(synergy::detail::management::synergy_signal::GET_CORE_FREQUENCY, handle.domain), 
-      handle.domain, 
-      handle.id) * 1e-6;
-    
-      synergy::log::synergy_log(synergy::log::LogLevel::Debug, "Core frequency: " + std::to_string(freq) + " MHz");
-    
-      return freq;
+
+    /* In composite mode we can use a GPU with two tile in that case we assume that the frequency is the mean between the two freq */
+    if ( handle.domain == GEOPM_DOMAIN_GPU_CHIP){
+      frequency freq =  g::platform_io().read_signal(
+        synergy::detail::management::geopm_signal_name(synergy::detail::management::synergy_signal::GET_CORE_FREQUENCY, handle.domain), 
+        GEOPM_DOMAIN_GPU_CHIP, // Domain here must be GPU_CHIP since each tile can have a diffrent frequency 
+        handle.id) * 1e-6;
+        
+        synergy::log::synergy_log(synergy::log::LogLevel::Debug, "Core frequency: " + std::to_string(freq) + " MHz");
+      
+        return freq;
+    }
+    else{
+        frequency freq_0 =  g::platform_io().read_signal(
+        synergy::detail::management::geopm_signal_name(synergy::detail::management::synergy_signal::GET_CORE_FREQUENCY, handle.domain), 
+        GEOPM_DOMAIN_GPU_CHIP, // Domain here must be GPU_CHIP since each tile can have a diffrent frequency 
+        handle.id) * 1e-6;
+        
+        frequency freq_1 =  g::platform_io().read_signal(
+        synergy::detail::management::geopm_signal_name(synergy::detail::management::synergy_signal::GET_CORE_FREQUENCY, handle.domain), 
+        GEOPM_DOMAIN_GPU_CHIP, // Domain here must be GPU_CHIP since each tile can have a diffrent frequency 
+        handle.id+1) * 1e-6;
+        
+      return (freq_0 + freq_1) / 2;
+    }
   }
 
   inline frequency get_uncore_frequency(geopm::device_handle handle) const {
     return 0; // TODO: we need this, but it is not supported by GEOPM
   }
 
+  inline temperature_t get_temperature(geopm::device_handle handle) const{
+    temperature_t temperature=0;
+    if(handle.domain == GEOPM_DOMAIN_GPU){
+      temperature +=  g::platform_io().read_signal(
+        synergy::detail::management::geopm_signal_name(synergy::detail::management::synergy_signal::GET_TEMPERATURE, handle.domain), 
+        GEOPM_DOMAIN_GPU_CHIP, // Domain here must be GPU_CHIP since each tile can have a diffrent frequency 
+        handle.id);
+        temperature +=  g::platform_io().read_signal(
+        synergy::detail::management::geopm_signal_name(synergy::detail::management::synergy_signal::GET_TEMPERATURE, handle.domain), 
+        GEOPM_DOMAIN_GPU_CHIP, // Domain here must be GPU_CHIP since each tile can have a diffrent frequency 
+        handle.id+1);  
+    }else{
+        temperature =  g::platform_io().read_signal(
+          synergy::detail::management::geopm_signal_name(synergy::detail::management::synergy_signal::GET_TEMPERATURE, handle.domain), 
+          GEOPM_DOMAIN_GPU_CHIP, // Domain here must be GPU_CHIP since each tile can have a diffrent frequency 
+          handle.id);
+      }
+      return temperature;
+  }
   inline void set_core_frequency(geopm::device_handle handle, frequency target) const {
     std::string debug_msg = "set_core_frequency -> Vendor id: " + std::to_string(handle.id) + " domain: " + std::to_string(static_cast<int>(handle.domain));
     synergy::log::synergy_log(synergy::log::LogLevel::Debug, debug_msg);
