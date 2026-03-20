@@ -99,7 +99,13 @@ endif()
 
 # ##################### Samples ######################
 option(SYNERGY_BUILD_SAMPLES "Build samples" OFF)
+option(SYNERGY_BUILD_TEST "Build test" OFF)
+
 
 if(SYNERGY_BUILD_SAMPLES)
 	add_subdirectory(samples)
+endif()
+
+if(SYNERGY_BUILD_TEST)
+	add_subdirectory(test)
 endif()

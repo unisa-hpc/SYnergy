@@ -1,0 +1,132 @@
+#include <iostream>
+#include <synergy.hpp>
+#include <cstdlib>
+#include <cstring>
+
+
+constexpr int N = 4096;
+constexpr int VAL = 2;
+
+// pick root device with the specified ID
+sycl::device pick_device(int dev_id){
+  std::vector<sycl::device> candidates; // Available devices for each rank
+  
+  for (const auto& plat : sycl::platform::get_platforms()) { // Handle only Level-Zero platforms: oneCCL only supports Intel GPUs 
+      auto name = plat.get_info<sycl::info::platform::name>();
+      if (name.find("Level-Zero") == std::string::npos) continue;
+
+      for (const auto& root : plat.get_devices()) {
+          if (!root.is_gpu()) continue;
+          candidates.push_back(root);
+      }
+  }     
+  return candidates[dev_id];
+}
+// pick the subdevices for the specified device
+std::vector<sycl::device> pick_sub_devices(sycl::device dev) {
+  auto max_sub_devices = dev.get_info<sycl::info::device::partition_max_sub_devices>();
+  std::clog << "[LOG] Max. num. of sub devices: " << max_sub_devices <<std::endl;
+  auto tiles = dev.create_sub_devices<
+                  sycl::info::partition_property::partition_by_affinity_domain>(
+                  sycl::info::partition_affinity_domain::next_partitionable);
+                      
+  //  auto tiles = dev.create_sub_devices(max_sub_devices);
+    return tiles;
+}
+
+void print_usage() {
+  std::cout << "Usage: ./freq_scale <freq>" << std::endl;
+}
+
+template<typename value_type>
+sycl::event matmul(synergy::queue& q, std::vector<value_type>& a, std::vector<value_type>& b, std::vector<value_type>& c, size_t n) {
+  sycl::buffer<value_type, 2> a_buf{a.data(), sycl::range{N, N}};
+  sycl::buffer<value_type, 2> b_buf{b.data(), sycl::range{N, N}};
+  sycl::buffer<value_type, 2> c_buf{c.data(), sycl::range{N, N}};
+  return q.submit([&](sycl::handler& h) {
+    sycl::accessor a_acc{a_buf, h, sycl::read_only};
+    sycl::accessor b_acc{b_buf, h, sycl::read_only};
+    sycl::accessor c_acc{c_buf, h, sycl::read_write};
+
+    sycl::range<2> grid{n, n};
+    sycl::range<2> block{n < 32 ? n : 32, n < 32 ? n : 32};
+
+    h.parallel_for<class mat_mul>(sycl::nd_range<2>(grid, block), [=](sycl::nd_item<2> idx) {
+      int i = idx.get_global_id(0);
+      int j = idx.get_global_id(1);
+
+      c_acc[i][j] = 0.0f;
+      for (size_t k = 0; k < n; k++) {
+        c_acc[i][j] += a_acc[i][k] * b_acc[k][j];
+      }
+    });
+  });
+}
+
+void checkConsume(synergy::queue& q, sycl::event& e) {
+  auto start = e.get_profiling_info<sycl::info::event_profiling::command_start>();
+  auto end = e.get_profiling_info<sycl::info::event_profiling::command_end>();
+  std::cout << "Retrived Frequency: " << q.get_synergy_device().get_core_frequency(false) << " MHz\n";
+  std::cout << "Execution time: " << (end - start) * 1e-9 << " s\n";
+  #ifdef SYNERGY_KERNEL_PROFILING
+    std::cout << "Kernel energy consumption: " << q.kernel_energy_consumption(e) << " j\n";
+  #endif
+  #ifdef SYNERGY_DEVICE_PROFILING
+    std::cout << "Device energy consumption: " << q.device_energy_consumption() << " j\n";
+  #ifdef SYNERGY_HOST_PROFILING
+    std::cout << "Host energy consumption: " << q.host_energy_consumption() << " j\n";
+  #endif
+  #endif
+}
+
+int main(int argc, char **argv) {
+
+  if (argc < 2) {
+    print_usage();
+    return 1;
+  }
+
+  synergy::frequency freq;
+  try {
+    freq = atoi(argv[1]);
+  } catch (std::exception &e) {
+    print_usage();
+    return 1;
+  }
+  
+  // check env variable ZE_FLAT_DEVICE_HIERARCHY
+  const char* value = std::getenv("ZE_FLAT_DEVICE_HIERARCHY");
+
+  if (value != nullptr && std::strcmp(value, "COMPOSITE") == 0) {
+    std::cerr << "Running test composite mode with sub deivice extracted from a root device\n";
+  } else {
+    std::cerr << "synergy test error: this test can only be done by using COMPOSITE mode\n";
+    return -1;
+  } 
+
+  sycl::device slected_device = pick_device(0);
+  std::vector<sycl::device> tiles = pick_sub_devices(slected_device);
+  sycl::device selected_sub_dev = tiles[0];
+
+  // pick a root device
+  synergy::queue q_first_tile {selected_sub_dev, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}}};
+  // create a synergy::queue with the second tile to check that the frequency of the second tile is not modified 
+  synergy::queue q_second_tile {tiles[1], sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}}}; 
+
+
+  q_first_tile.get_synergy_device().set_core_frequency(freq); // change the freq. of the single tile
+
+  synergy::utils::check_core_freq(q_first_tile.get_synergy_device(), freq, 1000); // be sure that the frequency is set
+
+  std::vector<int> a(N * N, 1);
+  std::vector<int> b(N * N, 1);
+  std::vector<int> c(N * N, 0);
+
+  auto e1 = matmul(q_first_tile, a, b, c, N);
+  e1.wait();
+  std::cout << "Target frequency for first tile: " << freq << " MHz\n";
+  checkConsume(q_first_tile, e1);
+  // Print second tile frequency
+  std::cout<< "Second tile frequency: " << q_second_tile.get_synergy_device().get_core_frequency(false) << " MHz" << std::endl;
+
+}
