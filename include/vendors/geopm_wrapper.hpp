@@ -163,10 +163,9 @@ public:
       In FLAT mode SYnergy return the core frequnecy of the selected tile. Differently in COMPOSITE mode we can have two scenarios:
        1. The device used by the syenergy::queue is a subdevice of the root. In that case SYnergy automatically set the GEOPM domain to FLAT,
           so that each subdevice is managed has a single independent device.
-       2. The device use byt the synergy::queue is a root device composed of two tiles. 
-          In that case the GEOPM domain is set to composite but we have to query the core frquency of both tile: for now we return a single value that 
-          is the mean of the core freq.
-          TODO: return an std::vector that contains the frequnecy of each tile.
+       2. The device used by the synergy::queue is a root device composed of two tiles. 
+          In that case the GEOPM domain is set to composite but we have to query the freq of the two tile.
+          if the tile
     */
     if ( handle.domain == GEOPM_DOMAIN_GPU_CHIP){
       frequency freq = management::geopm_read(
@@ -286,33 +285,32 @@ public:
           management::synergy_signal::SET_MAX_CORE_FREQ, 
           handle.domain, 
           handle.id, 
-          target * 1e6);
-    
+          target * 1e6);    
         }
         else{ // handle COMPOSITE mode with root device
           /********** First tile freq change ***********/
           management::geopm_write(
             management::synergy_signal::SET_MIN_CORE_FREQ, 
-            handle.domain, 
+            GEOPM_DOMAIN_GPU_CHIP, 
             handle.id * management::NUM_TILES, 
             target * 1e6);
 
           management::geopm_write(
             management::synergy_signal::SET_MAX_CORE_FREQ, 
-            handle.domain, 
+            GEOPM_DOMAIN_GPU_CHIP, 
             handle.id * management::NUM_TILES, 
             target * 1e6);
           /**********************************************/
           /********** Second tile freq change ***********/
           management::geopm_write(
             management::synergy_signal::SET_MIN_CORE_FREQ, 
-            handle.domain, 
+            GEOPM_DOMAIN_GPU_CHIP, 
             handle.id * management::NUM_TILES + 1, 
             target * 1e6);
 
           management::geopm_write(
             management::synergy_signal::SET_MAX_CORE_FREQ, 
-            handle.domain, 
+            GEOPM_DOMAIN_GPU_CHIP, 
             handle.id * management::NUM_TILES + 1, 
             target * 1e6);
             /**********************************************/
