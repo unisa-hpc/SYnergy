@@ -1,3 +1,10 @@
+#===------------------------------------------------------------------------===#
+# Part of the SYnergy Project, under the Apache License v2.0 with LLVM Exceptions.
+# See LICENSE for license information.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+# Copyright (c) 2022-2026 University of Salerno
+#===------------------------------------------------------------------------===#
+
 link_libraries(synergy)
 
 option(SYNERGY_SAMPLES_ALL_WARNINGS "Enable all warnings during SYnergy samples compilation" OFF)

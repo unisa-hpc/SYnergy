@@ -33,3 +33,9 @@ cmake .. -DSYNERGY_BUILD_SAMPLES=ON -DSYNERGY_SYCL_IMPL=[OpenSYCL | DPC++] -DSYN
 
 ## Usage
 To use SYnergy, just swap your current `sycl::queue` with `synergy::queue`. Under the `samples/` folder you can find an example of SYnergy usage.
+
+## License
+SYnergy is licensed under the Apache License v2.0 with LLVM Exceptions (`SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception`).
+See [LICENSE](LICENSE) for details.
+
+Copyright (c) 2022-2026 University of Salerno
