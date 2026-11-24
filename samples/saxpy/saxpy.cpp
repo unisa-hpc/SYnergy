@@ -6,36 +6,47 @@
 //===----------------------------------------------------------------------===//
 
 #include <synergy.hpp>
+#include <chrono>
 
 using namespace sycl;
 
+#define SIZE 64
+
 int main() {
-  std::vector<float> x(2048);
-  std::vector<float> y(2048);
-  std::vector<float> z(2048);
+  std::vector<float> x(SIZE);
+  std::vector<float> y(SIZE);
+  std::vector<float> z(SIZE);
   float alpha{10};
 
   synergy::queue q{gpu_selector_v};
 
-  buffer<float, 1> x_buf{x.data(), 2048};
-  buffer<float, 1> y_buf{y.data(), 2048};
-  buffer<float, 1> z_buf{z.data(), 2048};
+  buffer<float, 1> x_buf{x.data(), SIZE};
+  buffer<float, 1> y_buf{y.data(), SIZE};
+  buffer<float, 1> z_buf{z.data(), SIZE};
 
+  auto start_total = std::chrono::high_resolution_clock::now();
   event e = q.submit([&](handler& h) {
     accessor<float, 1, access_mode::read> x_acc{x_buf, h};
     accessor<float, 1, access_mode::read> y_acc{y_buf, h};
     accessor<float, 1, access_mode::read_write> z_acc{z_buf, h};
     float a{alpha};
 
-    h.parallel_for(range<1>{2048}, [=](sycl::id<1> id) {
+    h.parallel_for(range<1>{SIZE}, [=](sycl::id<1> id) {
       z_acc[id] = a * x_acc[id] + y_acc[id];
     });
   });
 
   q.wait();
+  auto end_total = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double, std::micro> total_time = end_total - start_total;
+  std::cout << "Total Time: " << total_time.count() << " us" << std::endl;
 
 #ifdef SYNERGY_KERNEL_PROFILING
   std::cout << "Kernel energy consumption: " << q.kernel_energy_consumption(e) << " j\n";
+  const auto start = e.get_profiling_info<sycl::info::event_profiling::command_start>();
+  const auto end = e.get_profiling_info<sycl::info::event_profiling::command_end>();
+  std::cout << "Kernel Time: " << (end - start) / 1e3 << " us" << std::endl;
+
 #endif
 #ifdef SYNERGY_DEVICE_PROFILING
   std::cout << "Device energy consumption: " << q.device_energy_consumption() << " j\n";
