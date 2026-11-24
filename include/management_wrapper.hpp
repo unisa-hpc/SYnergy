@@ -8,7 +8,7 @@
 #pragma once
 
 #include <vector>
-
+#include "vendor_traits.hpp"
 #include "types.hpp"
 
 namespace synergy {
@@ -27,7 +27,7 @@ public:
   void shutdown() const;
 
   unsigned int get_devices_count() const;
-  device_handle get_device_handle(device_indentifier) const;
+  device_handle get_device_handle(device_indentifier, std::optional<synergy::gpu_domain> domain = std::nullopt) const;
 
   power get_power_usage(device_handle) const;
   energy get_energy_usage(device_handle) const;

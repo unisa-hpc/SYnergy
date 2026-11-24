@@ -13,11 +13,49 @@ if(SYNERGY_SYCL_IMPL STREQUAL "OpenSYCL" AND SYNERGY_LZ_SUPPORT)
   message(STATUS "The supported OpenSYCL target for Level Zero is \"sscp\"")
 endif()
 
-add_executable(matrix_mul matrix_mul/matrix_mul.cpp)
-add_executable(query_freq query_freq/query_freq.cpp)
+add_executable(mat_mul aurora/mat_mul.cpp)
 add_executable(saxpy saxpy/saxpy.cpp)
 add_executable(concurrent_matmul concurrent_matmul/concurrent_matmul.cpp)
 add_executable(freq_scale freq_scale/freq_scale.cpp)
+add_executable(freq_change freq_change/freq_change.cpp)
+add_executable(freq_overhead freq_overhead/freq_overhead.cpp)
+add_executable(query_freq query_freq/query_freq.cpp)
+
+
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/run.sh
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/freq_overhead/run.sh ${CMAKE_CURRENT_BINARY_DIR}/run.sh
+  DEPENDS ${CMAKE_CURRENT_LIST_DIR}/freq_overhead/run.sh
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/parse.py
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/freq_overhead/parse.py ${CMAKE_CURRENT_BINARY_DIR}/parse.py
+  DEPENDS ${CMAKE_CURRENT_LIST_DIR}/freq_overhead/parse.py
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/plot_time.py
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/freq_overhead/plot_time.py ${CMAKE_CURRENT_BINARY_DIR}/plot_time.py
+  DEPENDS ${CMAKE_CURRENT_LIST_DIR}/freq_overhead/plot_time.py
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/plot_energy.py
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/freq_overhead/plot_energy.py ${CMAKE_CURRENT_BINARY_DIR}/plot_energy.py
+  DEPENDS ${CMAKE_CURRENT_LIST_DIR}/freq_overhead/plot_energy.py
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Brommy.bmp
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/freq_overhead/Brommy.bmp ${CMAKE_CURRENT_BINARY_DIR}/Brommy.bmp
+  DEPENDS ${CMAKE_CURRENT_LIST_DIR}/freq_overhead/Brommy.bmp
+)
+
+add_custom_target(copy_scripts ALL
+  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/run.sh ${CMAKE_CURRENT_BINARY_DIR}/parse.py ${CMAKE_CURRENT_BINARY_DIR}/plot_time.py ${CMAKE_CURRENT_BINARY_DIR}/plot_energy.py ${CMAKE_CURRENT_BINARY_DIR}/Brommy.bmp
+)
 
 get_directory_property(all_targets BUILDSYSTEM_TARGETS)
 
@@ -60,7 +98,7 @@ foreach(target IN LISTS all_targets)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=spir64_gen")
 
       set(SYNERGY_SAMPLES_LZ_ARCH "" CACHE STRING "Level Zero device architecture e.g. acm-g10")
-      if(NOT SYNERGY_SAMPLES_ROCM_ARCH STREQUAL "")
+      if(NOT SYNERGY_SAMPLES_LZ_ARCH STREQUAL "")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend \"-device ${SYNERGY_SAMPLES_LZ_ARCH}\"")
       endif()
     endif()
